@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Foot à 5 – Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F4EF;--surface:#FFFFFF;--ink:#15201A;--muted:#5C6A61;--line:#D5DCD4;
+  --pitch:#1D6A44;--pitch-ink:#FFFFFF;--a:#D9581A;--b:#2453C2;--gold:#B8890A;--gold-bg:#FBF3DA;--danger:#B3261E;
+  color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1511;--surface:#16201A;--ink:#E6EDE8;--muted:#93A299;--line:#2A3830;
+    --pitch:#2F8F5E;--pitch-ink:#FFFFFF;--a:#F07A3C;--b:#6D95F2;--gold:#E2B53C;--gold-bg:#2C2611;--danger:#F2766C;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1511;--surface:#16201A;--ink:#E6EDE8;--muted:#93A299;--line:#2A3830;
+  --pitch:#2F8F5E;--pitch-ink:#FFFFFF;--a:#F07A3C;--b:#6D95F2;--gold:#E2B53C;--gold-bg:#2C2611;--danger:#F2766C;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--pitch)}
+.cond{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+
+/* Tableau d'affichage */
+.top{background:var(--pitch);color:var(--pitch-ink);padding:12px 16px 18px;
+  background-image:linear-gradient(90deg,transparent calc(50% - 1px),rgba(255,255,255,.22) calc(50% - 1px),rgba(255,255,255,.22) calc(50% + 1px),transparent calc(50% + 1px))}
+.wrap{max-width:560px;margin:0 auto}
+.brand{font:600 15px/1 "Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.02em;opacity:.85}
+.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:10px}
+.board .tn{font:600 20px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;overflow-wrap:anywhere}
+.board .tn.r{text-align:right}
+.board .tn::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:1px}
+.board .tn.A::before{background:var(--a)}
+.board .tn.B::before{background:var(--b)}
+.board .sc{font:700 46px/1 "Barlow Condensed","Arial Narrow",sans-serif;font-variant-numeric:tabular-nums;background:rgba(0,0,0,.22);padding:4px 14px 6px;border-radius:6px;min-width:120px;text-align:center}
+.board-sub{text-align:center;font-size:14px;margin-top:8px;opacity:.9}
+.board-empty{font:600 26px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;margin-top:10px}
+
+main{padding:14px 12px calc(84px + env(safe-area-inset-bottom,0px))}
+h2{font:600 21px/1.2 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 12px;margin-bottom:12px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.empty{text-align:center;padding:40px 12px;color:var(--muted)}
+.btn{display:block;width:100%;font:600 19px/1 "Barlow Condensed","Arial Narrow",sans-serif;padding:14px 16px;border-radius:8px;border:0;background:var(--pitch);color:var(--pitch-ink);margin-bottom:10px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn.inline{display:inline-block;width:auto;padding:11px 16px;margin:0}
+.link{background:none;border:0;padding:0;color:var(--b);text-decoration:underline}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
+label.fld{display:block;font-size:14px;color:var(--muted);margin-bottom:10px}
+label.fld input,label.fld select{margin-top:4px;color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.addrow{display:flex;gap:8px;margin-bottom:12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:2px;flex:none}
+.dot.A{background:var(--a)}.dot.B{background:var(--b)}
+
+/* Composition */
+.counts{display:flex;gap:16px;font-size:14px;margin-bottom:8px;flex-wrap:wrap}
+.counts b{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:17px}
+.counts .ok{color:var(--pitch)}
+.prow{display:flex;align-items:center;gap:6px;padding:7px 0;border-top:1px solid var(--line)}
+.prow .pn{flex:1;min-width:0;overflow-wrap:anywhere}
+.seg4{display:flex;gap:3px}
+.seg4 button{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 7px;font:600 14px/1 "Barlow Condensed","Arial Narrow",sans-serif;min-width:30px}
+.seg4 button.on.A,.seg4 button.on.sA{background:var(--a);border-color:var(--a);color:#fff}
+.seg4 button.on.B,.seg4 button.on.sB{background:var(--b);border-color:var(--b);color:#fff}
+.x{background:none;border:0;color:var(--muted);font-size:20px;line-height:1;padding:4px 6px}
+.lineup{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lineup h3{font:600 17px/1.2 "Barlow Condensed","Arial Narrow",sans-serif;margin:0 0 6px;display:flex;align-items:center;gap:6px}
+.lineup ul{list-style:none;margin:0;padding:0}
+.lineup li{padding:3px 0;font-size:15px;overflow-wrap:anywhere}
+.lineup li.sub{color:var(--muted)}
+.lineup .ck{color:var(--pitch);font-weight:600}
+
+/* Score + vainqueur */
+.scorein{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end;margin-bottom:12px}
+.scorein input{font:700 30px/1 "Barlow Condensed","Arial Narrow",sans-serif;text-align:center;padding:8px}
+.scorein span{font:700 28px/1 "Barlow Condensed","Arial Narrow",sans-serif;padding-bottom:12px}
+.seg{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;margin-bottom:12px}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 8px;font-weight:600;overflow-wrap:anywhere}
+.seg button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sorts{display:flex;gap:6px;margin-bottom:10px}
+.sorts button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 6px;font-weight:600;font-size:15px}
+.sorts button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* Vote */
+.who{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.rrow .rhead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rrow .rhead .nm{flex:1;font-weight:600}
+.rrow .val{font:700 26px/1 "Barlow Condensed","Arial Narrow",sans-serif;min-width:30px;text-align:right;font-variant-numeric:tabular-nums}
+.rates{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:8px}
+.rates button{height:38px;padding:0;border:1px solid var(--line);background:var(--bg);border-radius:6px;font:600 17px/1 "Barlow Condensed","Arial Narrow",sans-serif}
+.rates button.on{background:var(--pitch);border-color:var(--pitch);color:#fff}
+.rates button.lit{background:color-mix(in srgb,var(--pitch) 18%,var(--bg))}
+.cmt{font-size:15px;padding:8px 10px}
+.savebar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));padding-top:6px;background:linear-gradient(transparent,var(--bg) 30%)}
+.msg{font-size:15px;margin:0 0 10px;min-height:1px}
+.msg.err{color:var(--danger)}
+.msg.ok{color:var(--pitch)}
+
+/* Résultats */
+.result{text-align:center}
+.result .wl{font:600 22px/1.2 "Barlow Condensed","Arial Narrow",sans-serif;margin-bottom:8px}
+.result .sb{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.result .sb .tn{font:600 18px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;overflow-wrap:anywhere;display:flex;align-items:center;gap:6px;justify-content:center}
+.result .sb .tn.win{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:4px}
+.result .score{font:700 52px/1 "Barlow Condensed","Arial Narrow",sans-serif;font-variant-numeric:tabular-nums}
+.motm{background:var(--gold-bg);border:2px solid var(--gold);text-align:center}
+.motm .k{font-size:14px;color:var(--gold);font-weight:600}
+.motm .n{font:700 34px/1.05 "Barlow Condensed","Arial Narrow",sans-serif;margin:4px 0;overflow-wrap:anywhere}
+.rank{list-style:none;margin:0;padding:0}
+.rank li{display:grid;grid-template-columns:28px 12px 1fr auto auto;gap:8px;align-items:start;padding:9px 0;border-top:1px solid var(--line)}
+.rank li:first-child{border-top:0}
+.rank .pos{font:700 20px/1.2 "Barlow Condensed","Arial Narrow",sans-serif;color:var(--muted)}
+.rank .dot{margin-top:6px}
+.rank .nm{overflow-wrap:anywhere}
+.rank .nm small{color:var(--muted)}
+.rank .cm{display:block;font-size:13px;color:var(--muted);font-style:italic;margin-top:2px}
+.rank .avg{font:700 22px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;font-variant-numeric:tabular-nums}
+.rank .nv{font-size:13px;color:var(--muted);padding-top:4px;min-width:42px;text-align:right}
+.rank li.is-motm .pos,.rank li.is-motm .avg{color:var(--gold)}
+
+/* Stats */
+.tbl{overflow-x:auto;margin:0 -12px;padding:0 12px}
+table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 5px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+th{font:600 14px/1.2 "Barlow Condensed","Arial Narrow",sans-serif;color:var(--muted);border-top:0}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:90px}
+th.on{color:var(--ink);text-decoration:underline}
+td.hl{font-weight:600}
+
+/* Historique */
+.hitem{width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;display:block}
+.hitem .d{font-size:13px;color:var(--muted)}
+.hitem .l{display:flex;align-items:center;gap:8px;font:600 19px/1.2 "Barlow Condensed","Arial Narrow",sans-serif;margin:4px 0;flex-wrap:wrap}
+.hitem .l .w{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.hitem .s{font-variant-numeric:tabular-nums}
+.hitem .ps{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.hitem .m{font-size:14px;margin-top:4px}
+.hitem .m b{color:var(--gold)}
+.hdetail{margin:-4px 0 14px 10px;padding-left:10px;border-left:3px solid var(--line)}
+
+/* Navigation */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs .wrap{display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{background:none;border:0;border-top:3px solid transparent;padding:12px 0 14px;font:600 17px/1 "Barlow Condensed","Arial Narrow",sans-serif;color:var(--muted)}
+.tabs button.on{color:var(--pitch);border-top-color:var(--pitch)}
+
+/* Fenêtre */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.modal[hidden]{display:none}
+.mbox{background:var(--surface);color:var(--ink);border-radius:12px;padding:18px 16px 8px;width:100%;max-width:520px;max-height:calc(100% - 24px);overflow:auto;margin-bottom:env(safe-area-inset-bottom,0px)}
+.pins{list-style:none;margin:0 0 12px;padding:0}
+.pins li{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--line);gap:10px}
+.pins .pin{font:700 26px/1 "Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:30;font-size:15px;max-width:90%}
+.toast[hidden]{display:none}
+@media (prefers-reduced-motion:no-preference){.mbox{animation:up .18s ease-out}@keyframes up{from{transform:translateY(16px);opacity:0}}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><div class="brand">Foot à 5 – Notes</div><div id="board"></div></div></header>
+<main><div class="wrap" id="view"><p class="muted">Chargement…</p></div></main>
+<nav class="tabs" aria-label="Sections"><div class="wrap">
+  <button data-tab="match" class="on">Match</button>
+  <button data-tab="vote">Voter</button>
+  <button data-tab="stats">Stats</button>
+  <button data-tab="hist">Historique</button>
+</div></nav>
+<div class="modal" id="modal" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<script type="module">
+/* ====== À REMPLIR : config Firebase (Console Firebase > Paramètres du projet > Vos applications > Web) ====== */
+const firebaseConfig={
+  apiKey:"AIzaSyDvKm4HJTHt2XD8MaUx9pqrrQj454X6lM8",
+  authDomain:"foot5-68b18.firebaseapp.com",
+  projectId:"foot5-68b18",
+  storageBucket:"foot5-68b18.firebasestorage.app",
+  messagingSenderId:"123694775975",
+  appId:"1:123694775975:web:a17eb484f7b57e37eba582"
+};
+/* =========================================================================================================== */
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,doc,collection,setDoc,updateDoc,deleteDoc,getDocs,onSnapshot} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const S={players:[],matches:[],votes:[],meta:null,config:{},noConf:false,got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,isOrg:false,
+  tab:'match',voter:null,draft:null,loginErr:'',voteMsg:null,
+  setup:{assign:{},date:'',nameA:'Équipe A',nameB:'Équipe B',newName:''},
+  closeForm:{sA:'',sB:'',winner:''},statSort:'win',openHist:null,pending:false};
+let db=null;
+const $v=document.getElementById('view'),$b=document.getElementById('board'),$m=document.getElementById('modal'),$t=document.getElementById('toast');
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const todayISO=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const fmtDate=s=>{try{return new Date(s+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}catch(e){return s}};
+const fmt1=n=>n==null?'–':n.toFixed(1).replace('.',',');
+S.setup.date=todayISO();
+
+function cur(){const id=S.meta&&S.meta.currentMatchId;return id?S.matches.find(m=>m.id===id)||null:null}
+function parts(m){return [...m.teams.A,...(m.subs.A||[]),...m.teams.B,...(m.subs.B||[])]}
+function teamOf(m,p){return (m.teams.A.includes(p)||(m.subs.A||[]).includes(p))?'A':'B'}
+function isSub(m,p){return (m.subs.A||[]).includes(p)||(m.subs.B||[]).includes(p)}
+function pname(p,m){const pl=S.players.find(x=>x.id===p);return pl?pl.name:((m&&m.names&&m.names[p])||'?')}
+function tname(m,t){return (m.teamNames&&m.teamNames[t])||('Équipe '+t)}
+function votesOf(mid){return S.votes.filter(v=>v.matchId===mid)}
+function closedMatches(){return S.matches.filter(m=>m.status==='closed').sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||0)-(a.createdAt||0))}
+
+function toast(msg){$t.textContent=msg;$t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>$t.hidden=true,2800)}
+function errMsg(e){const c=e&&e.code;if(c==='permission-denied')return 'Action refusée : vérifie les règles Firestore.';if(c==='resource-exhausted')return 'Quota Firebase atteint.';return 'Erreur réseau. Réessaie.'}
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+function refreshOrg(){S.isOrg=!!(S.config.orgHash&&LS.get('foot5_org')===S.config.orgHash)}
+async function hashPin(mid,pid,pin){
+  const str=mid+':'+pid+':'+pin;
+  try{if(crypto&&crypto.subtle){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('')}}catch(e){}
+  let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return 'f'+(h>>>0).toString(16);
+}
+function newPin(){const a=new Uint32Array(1);crypto.getRandomValues(a);return String(a[0]%10000).padStart(4,'0')}
+
+/* ---------- Rendu ---------- */
+function schedule(){
+  const ae=document.activeElement;
+  if(ae&&$v.contains(ae)&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT')){S.pending=true;return}
+  render();
+}
+$v.addEventListener('focusout',()=>{if(S.pending)setTimeout(()=>{if(S.pending)schedule()},50)});
+
+function render(){
+  S.pending=false;
+  renderBoard();
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
+  let h;
+  if(S.noConf)h='<div class="empty"><p>Configuration Firebase manquante.</p><p class="small">Remplis <b>firebaseConfig</b> en haut du script. Voir README.</p></div>';
+  else if(S.noDb)h='<div class="empty"><p>Base inaccessible.</p><p class="small">Vérifie la config et les règles Firestore.</p></div>';
+  else if(!S.ready)h='<p class="muted">Chargement…</p>';
+  else h=({match:vMatch,vote:vVote,stats:vStats,hist:vHist})[S.tab]();
+  $v.innerHTML=h;
+}
+function renderBoard(){
+  const m=S.ready?cur():null;
+  if(!m){$b.innerHTML='<div class="board-empty">'+(S.ready?'Pas de match en cours':'…')+'</div>';return}
+  const closed=m.status==='closed';
+  const sc=closed?`${m.score.A} – ${m.score.B}`:'– : –';
+  let sub;
+  if(closed)sub=m.winner==='N'?'Match nul':esc(tname(m,m.winner))+' gagne';
+  else{const n=new Set(votesOf(m.id).map(v=>v.voter)).size;sub=`Votes ouverts : ${n}/${parts(m).length}`}
+  $b.innerHTML=`<div class="board"><div class="tn A">${esc(tname(m,'A'))}</div><div class="sc">${sc}</div><div class="tn B r">${esc(tname(m,'B'))}</div></div><div class="board-sub">${sub}</div>`;
+}
+
+/* Match */
+function vMatch(){return vMatchIn()+orgBar()}
+function orgBar(){return S.isOrg?'<p style="text-align:center;margin-top:18px"><button class="link" data-act="orgOut">Quitter le mode organisateur</button></p>':'<p style="text-align:center;margin-top:18px"><button class="link" data-act="orgIn">Je suis l’organisateur</button></p>'}
+function vMatchIn(){
+  const m=cur();
+  if(!m)return S.isOrg?vSetup():'<div class="empty"><p>Aucun match en cours.</p><p class="small">L’organisateur doit créer le match.</p></div>';
+  if(m.status==='closed')return resultCard(m)+motmCard(m)+rankCard(m)+(S.isOrg?'<button class="btn" data-act="newMatch">Nouveau match</button>':'');
+  const voted=new Set(votesOf(m.id).map(v=>v.voter));
+  let h=`<div class="card"><h2>Compositions</h2>${lineup(m,voted)}<p class="small muted" style="margin:10px 0 0">${voted.size}/${parts(m).length} ont voté. ✓ = vote reçu.</p></div>`;
+  h+='<button class="btn'+(S.isOrg?' ghost':'')+'" data-act="goVote">Voter</button>';
+  if(S.isOrg)h+=closeForm(m)+'<button class="btn danger" data-act="newMatch">Abandonner et nouveau match</button>';
+  return h;
+}
+function lineup(m,voted){
+  const col=t=>{const li=p=>`<li class="${isSub(m,p)?'sub':''}">${esc(pname(p,m))}${isSub(m,p)?' (remp.)':''} ${voted&&voted.has(p)?'<span class="ck">✓</span>':''}</li>`;
+    return `<div><h3><span class="dot ${t}"></span>${esc(tname(m,t))}</h3><ul>${m.teams[t].map(li).join('')}${(m.subs[t]||[]).map(li).join('')}</ul></div>`};
+  return `<div class="lineup">${col('A')}${col('B')}</div>`;
+}
+function closeForm(m){
+  const f=S.closeForm;
+  const w=k=>`<button data-w="${k}" class="${f.winner===k?'on':''}">${k==='N'?'Nul':esc(tname(m,k))}</button>`;
+  return `<div class="card"><h2>Clôturer le match</h2>
+  <div class="scorein"><label class="fld" style="margin:0">${esc(tname(m,'A'))}<input type="number" min="0" max="99" inputmode="numeric" data-f="sA" value="${esc(f.sA)}"></label><span>–</span><label class="fld" style="margin:0">${esc(tname(m,'B'))}<input type="number" min="0" max="99" inputmode="numeric" data-f="sB" value="${esc(f.sB)}"></label></div>
+  <div class="small muted" style="margin-bottom:6px">Vainqueur</div>
+  <div class="seg" id="wseg">${w('A')}${w('N')}${w('B')}</div>
+  <button class="btn" data-act="close">Clôturer et publier les résultats</button></div>`;
+}
+function vSetup(){
+  const a=S.setup.assign,ids=Object.keys(a).filter(p=>S.players.some(x=>x.id===p));
+  const c=k=>ids.filter(p=>a[p]===k).length;
+  const nA=c('A'),nB=c('B'),ok=nA===5&&nB===5;
+  const pool=[...S.players].sort((x,y)=>x.name.localeCompare(y.name,'fr'));
+  const lab={A:'A',B:'B',sA:'Rem. A',sB:'Rem. B'};
+  const rows=pool.map(p=>`<div class="prow"><span class="pn">${esc(p.name)}</span><div class="seg4">${['A','B','sA','sB'].map(k=>`<button data-assign="${k}" data-p="${p.id}" class="${a[p.id]===k?'on '+k:''}" aria-pressed="${a[p.id]===k}">${lab[k]}</button>`).join('')}</div><button class="x" data-act="delPlayer" data-p="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button></div>`).join('');
+  return `<div class="card"><h2>Nouveau match</h2>
+  <label class="fld">Date<input type="date" data-s="date" value="${esc(S.setup.date)}"></label>
+  <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" value="${esc(S.setup.nameB)}"></label></div></div>
+  <div class="card"><h2>Joueurs</h2>
+  <div class="addrow"><input id="newName" placeholder="Nom du joueur" maxlength="30" value="${esc(S.setup.newName)}" autocomplete="off"><button class="btn inline" data-act="addPlayer">Ajouter</button></div>
+  <div class="counts"><span class="${nA===5?'ok':''}"><span class="dot A"></span> A : <b>${nA}/5</b>${c('sA')?' +'+c('sA')+' remp.':''}</span><span class="${nB===5?'ok':''}"><span class="dot B"></span> B : <b>${nB}/5</b>${c('sB')?' +'+c('sB')+' remp.':''}</span></div>
+  ${rows||'<p class="muted small">Ajoute des joueurs. Ils restent en mémoire pour les prochains matchs.</p>'}</div>
+  <button class="btn" data-act="create" ${ok?'':'disabled'}>Créer le match</button>
+  ${ok?'':'<p class="small muted" style="text-align:center;margin-top:-4px">5 titulaires par équipe requis.</p>'}`;
+}
+
+/* Vote */
+function vVote(){
+  const m=cur();
+  if(!m||m.status!=='open')return '<div class="empty"><p>Aucun vote ouvert.</p></div>';
+  if(!S.voter||S.voter.mid!==m.id){
+    const ps=parts(m).slice().sort((x,y)=>pname(x,m).localeCompare(pname(y,m),'fr'));
+    return `<div class="card"><h2>Identification</h2>
+    <label class="fld">Ton nom<select id="lname"><option value="">Choisir…</option>${ps.map(p=>`<option value="${p}">${esc(pname(p,m))}</option>`).join('')}</select></label>
+    <label class="fld">PIN<input id="lpin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="4 chiffres"></label>
+    <p class="msg err">${esc(S.loginErr)}</p>
+    <button class="btn" data-act="login">Valider</button></div>`;
+  }
+  const me=S.voter.pid,d=S.draft,existing=S.votes.find(v=>v.id===m.id+'__'+me);
+  const others=parts(m).filter(p=>p!==me);
+  const row=p=>{const r=d.ratings[p]||0;return `<div class="card rrow"><div class="rhead"><span class="dot ${teamOf(m,p)}"></span><span class="nm">${esc(pname(p,m))}</span><span class="val" data-val="${p}">${r||'–'}</span></div>
+    <div class="rates" data-p="${p}" role="group" aria-label="Note de ${esc(pname(p,m))}">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-r="${n}" class="${n===r?'on':(n<r?'lit':'')}" aria-pressed="${n===r}">${n}</button>`).join('')}</div>
+    <input class="cmt" data-c="${p}" maxlength="200" placeholder="Commentaire (optionnel)" value="${esc(d.comments[p]||'')}"></div>`};
+  const vm=S.voteMsg;
+  return `<div class="card who"><span>Votant : <b>${esc(pname(me,m))}</b></span><button class="link" data-act="logout">Changer</button></div>
+  ${existing?'<p class="small muted">Vote déjà envoyé. Modifiable jusqu’à la clôture.</p>':''}
+  ${others.map(row).join('')}
+  <div class="savebar"><p class="msg ${vm?vm.k:''}" id="vmsg">${vm?esc(vm.t):''}</p><button class="btn" data-act="saveVote">${existing?'Modifier mon vote':'Enregistrer mon vote'}</button></div>`;
+}
+
+/* Résultats */
+function rows(m){
+  const res=m.results||{};
+  const rs=parts(m).map(p=>{const r=res[p]||{sum:0,count:0};return {p,count:r.count,avg:r.count?r.sum/r.count:null}});
+  rs.sort((x,y)=>(y.avg??-1)-(x.avg??-1)||y.count-x.count);
+  rs.forEach(r=>r.rank=r.avg==null?'–':1+rs.filter(o=>o.avg!=null&&o.avg>r.avg).length);
+  return rs;
+}
+function resultCard(m){
+  const wl=m.winner==='N'?'Match nul':esc(tname(m,m.winner))+' gagne';
+  return `<div class="card result"><div class="wl">${wl}</div><div class="sb"><div class="tn ${m.winner==='A'?'win':''}"><span class="dot A"></span>${esc(tname(m,'A'))}</div><div class="score">${m.score.A} – ${m.score.B}</div><div class="tn ${m.winner==='B'?'win':''}"><span class="dot B"></span>${esc(tname(m,'B'))}</div></div><div class="small muted" style="margin-top:6px">${esc(fmtDate(m.date))}</div></div>`;
+}
+function motmCard(m){
+  const mo=m.motm||[];
+  if(!mo.length)return '<div class="card motm"><div class="k">Homme du match</div><p class="muted" style="margin:6px 0 0">Aucun vote : pas de MOTM.</p></div>';
+  const r=(m.results||{})[mo[0]];
+  return `<div class="card motm"><div class="k">Homme du match${mo.length>1?' (ex æquo)':''}</div><div class="n">${mo.map(p=>esc(pname(p,m))).join(' & ')}</div><div class="small">${fmt1(r.sum/r.count)}/10 sur ${r.count} vote${r.count>1?'s':''}</div></div>`;
+}
+function rankCard(m){
+  const vs=votesOf(m.id),mo=m.motm||[];
+  const li=r=>{const cm=vs.map(v=>v.comments&&v.comments[r.p]).filter(Boolean);
+    return `<li class="${mo.includes(r.p)?'is-motm':''}"><span class="pos">${r.rank}</span><span class="dot ${teamOf(m,r.p)}"></span><span class="nm">${esc(pname(r.p,m))}${isSub(m,r.p)?' <small>remp.</small>':''}${cm.length?`<span class="cm">${cm.map(c=>'« '+esc(c)+' »').join('<br>')}</span>`:''}</span><span class="avg">${fmt1(r.avg)}</span><span class="nv">${r.count} vote${r.count>1?'s':''}</span></li>`};
+  return `<div class="card"><h2>Classement</h2><ol class="rank">${rows(m).map(li).join('')}</ol></div>`;
+}
+
+/* Stats */
+function computeStats(){
+  const st={};
+  for(const m of closedMatches()){
+    for(const p of parts(m)){
+      const s=st[p]||(st[p]={p,mj:0,v:0,n:0,d:0,sum:0,cnt:0,motm:0,last:m});
+      s.mj++;const t=teamOf(m,p);
+      if(m.winner==='N')s.n++;else if(m.winner===t)s.v++;else s.d++;
+      const r=(m.results||{})[p];if(r){s.sum+=r.sum;s.cnt+=r.count}
+      if((m.motm||[]).includes(p))s.motm++;
+    }
+  }
+  return Object.values(st).map(s=>({...s,wr:s.mj?s.v/s.mj*100:0,avg:s.cnt?s.sum/s.cnt:null}));
+}
+function vStats(){
+  const all=computeStats();
+  const reset=S.isOrg?'<button class="btn danger" data-act="reset" style="margin-top:24px">Réinitialisation complète</button>':'';
+  if(!all.length)return '<div class="empty"><p>Aucun match clôturé.</p></div>'+reset;
+  const k=S.statSort;
+  const by={win:(a,b)=>b.wr-a.wr||b.mj-a.mj||(b.avg??-1)-(a.avg??-1),avg:(a,b)=>(b.avg??-1)-(a.avg??-1)||b.cnt-a.cnt,motm:(a,b)=>b.motm-a.motm||(b.avg??-1)-(a.avg??-1)};
+  all.sort(by[k]);
+  const sb=(key,l)=>`<button data-sort="${key}" class="${k===key?'on':''}" aria-pressed="${k===key}">${l}</button>`;
+  return `<div class="sorts">${sb('win','Win rate')}${sb('avg','Moyenne')}${sb('motm','MOTM')}</div>
+  <div class="card"><div class="tbl"><table><thead><tr><th>Joueur</th><th>MJ</th><th>V</th><th>N</th><th>D</th><th class="${k==='win'?'on':''}">%V</th><th class="${k==='avg'?'on':''}">Moy.</th><th class="${k==='motm'?'on':''}">MOTM</th></tr></thead><tbody>
+  ${all.map(s=>`<tr><td>${esc(pname(s.p,s.last))}</td><td>${s.mj}</td><td>${s.v}</td><td>${s.n}</td><td>${s.d}</td><td class="${k==='win'?'hl':''}">${Math.round(s.wr)}</td><td class="${k==='avg'?'hl':''}">${fmt1(s.avg)}</td><td class="${k==='motm'?'hl':''}">${s.motm}</td></tr>`).join('')}
+  </tbody></table></div><p class="small muted" style="margin:10px 0 0">MJ matchs joués, V victoires, N nuls, D défaites.</p></div>${reset}`;
+}
+
+/* Historique */
+function vHist(){
+  const ms=closedMatches();
+  if(!ms.length)return '<div class="empty"><p>Aucun match clôturé.</p></div>';
+  return ms.map(m=>{
+    const names=t=>[...m.teams[t],...(m.subs[t]||[])].map(p=>esc(pname(p,m))).join(', ');
+    const open=S.openHist===m.id;
+    return `<button class="hitem" data-hist="${m.id}" aria-expanded="${open}"><div class="d">${esc(fmtDate(m.date))}</div>
+    <div class="l"><span class="dot A"></span><span class="${m.winner==='A'?'w':''}">${esc(tname(m,'A'))}</span><span class="s">${m.score.A} – ${m.score.B}</span><span class="${m.winner==='B'?'w':''}">${esc(tname(m,'B'))}</span><span class="dot B"></span></div>
+    <div class="ps">A : ${names('A')}<br>B : ${names('B')}</div>
+    <div class="m">MOTM : <b>${(m.motm||[]).length?m.motm.map(p=>esc(pname(p,m))).join(' & '):'–'}</b></div></button>
+    ${open?`<div class="hdetail">${motmCard(m)}${rankCard(m)}</div>`:''}`;
+  }).join('');
+}
+
+/* ---------- Fenêtre ---------- */
+function openModal(html){$m.innerHTML=`<div class="mbox" role="dialog" aria-modal="true">${html}</div>`;$m.hidden=false;const f=$m.querySelector('input,button');if(f)f.focus()}
+function closeModal(){$m.hidden=true;$m.innerHTML=''}
+function confirmBox(text,ok,fn,word){
+  openModal(`<p style="margin-top:0">${text}</p>${word?`<label class="fld">Tape ${word} pour confirmer<input id="cword" autocomplete="off"></label>`:''}<button class="btn danger" id="cok">${ok}</button><button class="btn ghost" id="cno">Annuler</button>`);
+  $m.querySelector('#cno').onclick=closeModal;
+  $m.querySelector('#cok').onclick=async()=>{if(word&&$m.querySelector('#cword').value.trim().toUpperCase()!==word){toast('Mot incorrect.');return}closeModal();await fn()};
+}
+$m.addEventListener('click',e=>{if(e.target===$m&&!$m.dataset.lock)closeModal()});
+
+/* ---------- Actions ---------- */
+async function addPlayer(){
+  const inp=document.getElementById('newName');const name=(inp?inp.value:S.setup.newName).trim().replace(/\s+/g,' ');
+  if(!name)return;
+  if(S.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('Joueur déjà dans la liste.');return}
+  try{await db.collection('players').doc(rid('p')).set({name,createdAt:Date.now()});S.setup.newName='';render();const n=document.getElementById('newName');if(n)n.focus()}
+  catch(e){toast(errMsg(e))}
+}
+async function createMatch(){
+  const a=S.setup.assign,ids=Object.keys(a).filter(p=>S.players.some(x=>x.id===p));
+  const g=k=>ids.filter(p=>a[p]===k);
+  if(g('A').length!==5||g('B').length!==5)return;
+  const mid=rid('m'),all=[...g('A'),...g('sA'),...g('B'),...g('sB')];
+  const pins={},pinHash={},names={};
+  for(const p of all){pins[p]=newPin();pinHash[p]=await hashPin(mid,p,pins[p]);names[p]=pname(p)}
+  const m={createdAt:Date.now(),date:S.setup.date||todayISO(),teamNames:{A:S.setup.nameA.trim()||'Équipe A',B:S.setup.nameB.trim()||'Équipe B'},
+    teams:{A:g('A'),B:g('B')},subs:{A:g('sA'),B:g('sB')},names,pinHash,status:'open'};
+  try{
+    await db.doc('matches/'+mid).set(m);
+    await db.doc('meta/state').set({currentMatchId:mid});
+  }catch(e){toast(errMsg(e));return}
+  S.closeForm={sA:'',sB:'',winner:''};S.setup.assign={};
+  const txt=all.map(p=>`${names[p]} : ${pins[p]}`).join('\n');
+  $m.dataset.lock='1';
+  openModal(`<h2>Codes PIN</h2><p class="small" style="margin-top:0">Affichés une seule fois. Transmets-les maintenant.</p>
+  <ul class="pins">${all.map(p=>`<li><span>${esc(names[p])}</span><span class="pin">${pins[p]}</span></li>`).join('')}</ul>
+  <button class="btn ghost" id="pcopy">Copier la liste</button><button class="btn" id="pdone">C’est noté</button>`);
+  $m.querySelector('#pcopy').onclick=async e=>{try{await navigator.clipboard.writeText(txt);e.target.textContent='Copié'}catch(_){e.target.textContent='Copie impossible'}};
+  $m.querySelector('#pdone').onclick=()=>{delete $m.dataset.lock;closeModal()};
+}
+async function closeMatch(){
+  const m=cur();if(!m||m.status!=='open')return;
+  const f=S.closeForm,sA=parseInt(f.sA,10),sB=parseInt(f.sB,10);
+  if(!(sA>=0&&sB>=0)){toast('Saisis le score.');return}
+  if(!f.winner){toast('Choisis le vainqueur ou nul.');return}
+  const ps=parts(m),res={};ps.forEach(p=>res[p]={sum:0,count:0});
+  for(const v of votesOf(m.id)){if(!ps.includes(v.voter))continue;
+    for(const [p,n] of Object.entries(v.ratings||{})){if(p===v.voter||!res[p])continue;const x=Number(n);if(x>=1&&x<=10){res[p].sum+=x;res[p].count++}}}
+  let best=-1;ps.forEach(p=>{const r=res[p];if(r.count){const a=r.sum/r.count;if(a>best+1e-9)best=a}});
+  const motm=best<0?[]:ps.filter(p=>res[p].count&&Math.abs(res[p].sum/res[p].count-best)<1e-9);
+  try{await db.doc('matches/'+m.id).update({status:'closed',winner:f.winner,score:{A:sA,B:sB},results:res,motm,closedAt:Date.now()})}
+  catch(e){toast(errMsg(e))}
+}
+async function newMatch(){
+  const m=cur();
+  const go=async()=>{try{
+    if(m&&m.status==='open'){for(const v of votesOf(m.id))await db.doc('votes/'+v.id).delete();await db.doc('matches/'+m.id).delete()}
+    await db.doc('meta/state').set({currentMatchId:null});
+    S.voter=null;S.draft=null;S.setup.date=todayISO();S.tab='match';
+  }catch(e){toast(errMsg(e))}};
+  if(m&&m.status==='open')confirmBox('Abandonner le match en cours ? Ses votes seront supprimés.','Abandonner',go);
+  else await go();
+}
+async function login(){
+  const m=cur();if(!m)return;
+  const pid=document.getElementById('lname').value,pin=document.getElementById('lpin').value.trim();
+  if(!pid){S.loginErr='Choisis ton nom.';render();return}
+  if(!/^\d{4}$/.test(pin)){S.loginErr='PIN à 4 chiffres.';render();return}
+  const h=await hashPin(m.id,pid,pin);
+  if(!m.pinHash||m.pinHash[pid]!==h){S.loginErr='PIN incorrect.';render();return}
+  const ex=S.votes.find(v=>v.id===m.id+'__'+pid);
+  S.voter={mid:m.id,pid};S.loginErr='';S.voteMsg=null;
+  S.draft={ratings:{...((ex&&ex.ratings)||{})},comments:{...((ex&&ex.comments)||{})}};
+  render();window.scrollTo(0,0);
+}
+async function saveVote(){
+  const m=cur();
+  if(!m||m.status!=='open'){toast('Vote clôturé.');return}
+  const me=S.voter.pid,others=parts(m).filter(p=>p!==me),d=S.draft;
+  const miss=others.filter(p=>!d.ratings[p]);
+  if(miss.length){S.voteMsg={k:'err',t:`Il manque ${miss.length} note${miss.length>1?'s':''}.`};document.getElementById('vmsg').className='msg err';document.getElementById('vmsg').textContent=S.voteMsg.t;return}
+  const ratings={},comments={};
+  others.forEach(p=>{ratings[p]=d.ratings[p];const c=(d.comments[p]||'').trim();if(c)comments[p]=c.slice(0,200)});
+  try{await db.doc('votes/'+m.id+'__'+me).set({matchId:m.id,voter:me,ratings,comments,updatedAt:Date.now()});
+    S.voteMsg={k:'ok',t:'Vote enregistré.'};render();toast('Vote enregistré.')}
+  catch(e){S.voteMsg={k:'err',t:errMsg(e)};render()}
+}
+function orgLogin(){
+  const first=!S.config.orgHash;
+  openModal(`<h2>${first?'Créer le code organisateur':'Code organisateur'}</h2>
+  ${first?'<p class="small" style="margin-top:0">Aucun code défini. Choisis-en un (6 caractères min.) et garde-le pour toi.</p>':''}
+  <label class="fld">Code<input id="ocode" type="password" autocomplete="off"></label>
+  ${first?'<label class="fld">Confirmer<input id="ocode2" type="password" autocomplete="off"></label>':''}
+  <p class="msg err" id="oerr"></p><button class="btn" id="ook">Valider</button><button class="btn ghost" id="ono">Annuler</button>`);
+  $m.querySelector('#ono').onclick=closeModal;
+  const go=async()=>{
+    const c=$m.querySelector('#ocode').value,err=$m.querySelector('#oerr');
+    const h=await hashPin('org','foot5',c);
+    if(first){
+      if(c.length<6){err.textContent='6 caractères minimum.';return}
+      if(c!==$m.querySelector('#ocode2').value){err.textContent='Les codes diffèrent.';return}
+      try{await db.doc('meta/config').set({orgHash:h})}catch(e){err.textContent=errMsg(e);return}
+    }else if(h!==S.config.orgHash){err.textContent='Code incorrect.';return}
+    LS.set('foot5_org',h);S.config={...S.config,orgHash:h};refreshOrg();closeModal();render();
+  };
+  $m.querySelector('#ook').onclick=go;
+  $m.querySelectorAll('input').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')go()}));
+}
+async function resetAll(){
+  try{
+    for(const col of ['votes','matches','players']){const s=await db.collection(col).get();for(const d of s.docs)await db.doc(col+'/'+d.id).delete()}
+    await db.doc('meta/state').set({currentMatchId:null});
+    S.voter=null;S.draft=null;S.setup.assign={};S.openHist=null;S.tab='match';render();toast('Données effacées.');
+  }catch(e){toast(errMsg(e))}
+}
+
+/* ---------- Événements ---------- */
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;S.tab=b.dataset.tab;render();window.scrollTo(0,0)});
+$v.addEventListener('click',e=>{
+  const r=e.target.closest('.rates button');
+  if(r){const box=r.parentElement,p=box.dataset.p,n=+r.dataset.r;S.draft.ratings[p]=n;
+    box.querySelectorAll('button').forEach(b=>{const k=+b.dataset.r;b.className=k===n?'on':(k<n?'lit':'');b.setAttribute('aria-pressed',k===n)});
+    const v=$v.querySelector(`[data-val="${p}"]`);if(v)v.textContent=n;return}
+  const as=e.target.closest('[data-assign]');
+  if(as){const p=as.dataset.p,k=as.dataset.assign,a=S.setup.assign;
+    if(a[p]===k){delete a[p]}else{
+      if((k==='A'||k==='B')&&Object.keys(a).filter(x=>a[x]===k&&S.players.some(y=>y.id===x)).length>=5){toast('Équipe '+k+' complète.');return}
+      a[p]=k}
+    render();return}
+  const w=e.target.closest('[data-w]');
+  if(w){S.closeForm.winner=w.dataset.w;document.querySelectorAll('#wseg button').forEach(b=>b.classList.toggle('on',b.dataset.w===S.closeForm.winner));return}
+  const so=e.target.closest('[data-sort]');if(so){S.statSort=so.dataset.sort;render();return}
+  const hi=e.target.closest('[data-hist]');if(hi){S.openHist=S.openHist===hi.dataset.hist?null:hi.dataset.hist;render();return}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const act=b.dataset.act;
+  if(act==='addPlayer')addPlayer();
+  else if(act==='delPlayer'){const p=b.dataset.p,pl=S.players.find(x=>x.id===p);
+    confirmBox(`Retirer ${esc(pl?pl.name:'ce joueur')} de la liste ? Ses statistiques restent.`,'Retirer',async()=>{try{delete S.setup.assign[p];await db.doc('players/'+p).delete()}catch(e){toast(errMsg(e))}})}
+  else if(act==='create'){b.disabled=true;createMatch().finally(()=>{b.disabled=false})}
+  else if(act==='close'){b.disabled=true;closeMatch().finally(()=>{b.disabled=false})}
+  else if(act==='newMatch')newMatch();
+  else if(act==='goVote'){S.tab='vote';render();window.scrollTo(0,0)}
+  else if(act==='login')login();
+  else if(act==='logout'){S.voter=null;S.draft=null;S.voteMsg=null;render()}
+  else if(act==='saveVote'){b.disabled=true;saveVote().finally(()=>{const x=$v.querySelector('[data-act="saveVote"]');if(x)x.disabled=false})}
+  else if(act==='orgOut'){LS.del('foot5_org');refreshOrg();render()}
+  else if(act==='orgIn')orgLogin();
+  else if(act==='reset')confirmBox('Effacer tous les joueurs, matchs, votes et statistiques ? Action irréversible.','Tout effacer',resetAll,'EFFACER');
+});
+$v.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='newName'){S.setup.newName=t.value;return}
+  if(t.dataset.s){S.setup[t.dataset.s]=t.value;return}
+  if(t.dataset.c&&S.draft){S.draft.comments[t.dataset.c]=t.value;return}
+  if(t.dataset.f){S.closeForm[t.dataset.f]=t.value;
+    const a=parseInt(S.closeForm.sA,10),b=parseInt(S.closeForm.sB,10);
+    if(a>=0&&b>=0){S.closeForm.winner=a>b?'A':b>a?'B':'N';document.querySelectorAll('#wseg button').forEach(x=>x.classList.toggle('on',x.dataset.w===S.closeForm.winner))}}
+});
+$v.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  if(e.target.id==='newName'){e.preventDefault();addPlayer()}
+  else if(e.target.id==='lpin'){e.preventDefault();login()}
+});
+
+/* ---------- Données (Firestore) ---------- */
+function markReady(k){S.got[k]=1;if(!S.ready&&S.got.p&&S.got.m&&S.got.v&&S.got.s&&S.got.c)S.ready=true}
+function onErr(e){console.error(e);S.noDb=true;render()}
+(()=>{
+  if(!firebaseConfig.projectId||firebaseConfig.projectId.includes('REMPLACER')){S.noConf=true;render();return}
+  let fs;
+  try{fs=getFirestore(initializeApp(firebaseConfig))}catch(e){onErr(e);return}
+  const wrapDoc=p=>({
+    set:x=>setDoc(doc(fs,p),x),update:x=>updateDoc(doc(fs,p),x),delete:()=>deleteDoc(doc(fs,p)),
+    onSnapshot:(n,e)=>onSnapshot(doc(fs,p),s=>n({id:s.id,exists:s.exists(),data:()=>s.data()}),e)});
+  db={doc:wrapDoc,collection:c=>({doc:id=>wrapDoc(c+'/'+id),get:()=>getDocs(collection(fs,c)),onSnapshot:(n,e)=>onSnapshot(collection(fs,c),n,e)})};
+  db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));markReady('p');schedule()},onErr);
+  db.collection('matches').onSnapshot(s=>{S.matches=s.docs.map(d=>({id:d.id,...d.data()}));markReady('m');
+    const m=cur();if(S.voter&&(!m||m.id!==S.voter.mid||m.status!=='open')){S.voter=null;S.draft=null}
+    schedule()},onErr);
+  db.collection('votes').onSnapshot(s=>{S.votes=s.docs.map(d=>({id:d.id,...d.data()}));markReady('v');schedule()},onErr);
+  db.doc('meta/state').onSnapshot(d=>{S.meta=d.exists?d.data():{};markReady('s');schedule()},onErr);
+  db.doc('meta/config').onSnapshot(d=>{S.config=d.exists?d.data():{};refreshOrg();markReady('c');schedule()},onErr);
+})();
+render();
+</script>
+</body>
+</html>
