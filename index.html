@@ -340,6 +340,7 @@ th{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
 body.nogroup .tabs{display:none}
 .glist{display:grid;gap:8px;margin-bottom:12px}
 .glist button{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px 14px;font:600 17px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif}
+.robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
 .gid{font-family:ui-monospace,Menlo,monospace;background:var(--tint);border-radius:6px;padding:2px 6px}
@@ -494,6 +495,7 @@ const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k
 let LANG=(()=>{try{const l=localStorage.getItem('foot5_lang');if(l==='fr'||l==='en')return l}catch(e){}return /^fr/i.test(navigator.language||'fr')?'fr':'en'})();
 document.documentElement.lang=LANG;
 const EN={
+'👀 Mode spectateur : crée un compte pour jouer, voter et parier.':'👀 Spectator mode: create an account to play, vote and bet.','Compte nécessaire':'Account required','Sans compte, tu peux seulement regarder les matchs et les stats.':'Without an account you can only view matches and stats.','Un joueur avec un compte doit créer le match.':'A player with an account must create the match.','Seul un admin peut modifier le score d’un match terminé.':'Only an admin can change the score of a finished match.','Crée un compte pour voter.':'Create an account to vote.','Sans compte, tu peux seulement regarder.':'Without an account you can only watch.','Ton compte n’est pas encore joueur de ce groupe.':'Your account isn’t a player in this group yet.','Ça se fait tout seul, patiente quelques secondes.':'It happens automatically, wait a few seconds.','Tu n’as pas joué ce match.':'You didn’t play this match.','Seuls les joueurs du match votent.':'Only players of the match vote.','Crée un compte pour parier.':'Create an account to bet.','Il faut un compte pour créer un groupe : tu en seras l’admin.':'You need an account to create a group: you’ll be its admin.','Tu seras l’admin du groupe. Tu pourras nommer d’autres admins.':'You’ll be the group admin. You can appoint other admins.','Mot de passe : 4 caractères min.':'Password: 4 characters min.','Admin principal :':'Main admin:','Autres admins :':'Other admins:','le créateur':'the creator','👑 Gérer les admins':'👑 Manage admins','👑 Admins':'👑 Admins','Un admin peut corriger un match terminé, supprimer des votes ou des matchs et changer le mot de passe du groupe. Seuls les joueurs avec un compte peuvent être nommés.':'An admin can fix a finished match, delete votes or matches and change the group password. Only players with an account can be appointed.','Aucun autre joueur avec un compte.':'No other player with an account.','Nommer admin':'Make admin','Ancien admin sans compte':'Former admin without account','Nouvel admin nommé.':'New admin appointed.','Retirer les droits admin de':'Remove admin rights from','admin du groupe ?':'group admin?',
 'Foot à 5':'5-a-side','Foot à 5 – Notes':'5-a-side – Ratings','Match':'Match','Voter':'Vote','Stats':'Stats','Historique':'History','Sections':'Sections',
 'Annuler':'Cancel','Tous':'All','Tout':'All','Derniers':'Last','Dates':'Dates','Joueurs':'Players','Joueur':'Player','Filtres':'Filters',
 '🔒 Supprimer ce match':'🔒 Delete this match','(ex æquo)':'(tied)','(remp.)':'(sub)','remp.':'sub','10 buts':'10 goals','10 matchs':'10 matches','10 passes D':'10 assists','25 matchs':'25 matches','3 MOTM':'3 MOTM',
@@ -549,7 +551,7 @@ const EN={
 '⚖ Équilibrer les équipes (selon les notes)':'⚖ Balance teams (by ratings)','⚽ Meilleurs buteurs':'⚽ Top scorers','🅰️ Meilleurs passeurs':'🅰️ Top assists','🔒 Réinitialisation complète':'🔒 Full reset',
 'buts':'goals','PD':'ast','0 vote':'0 votes','Identifiant :':'ID:','Code :':'Code:','Date':'Date','Pause':'Pause','Vote':'Vote','Inviter ses amis':'Invite friends','Langue':'Language','🏆 Paris':'🏆 Bets','Cotes selon les notes des joueurs':'Odds based on player ratings','Cotes selon les notes des joueurs · fermés au coup d’envoi':'Odds based on player ratings · closed at kick-off',
 'Qui es-tu ? Choisis ton prénom pour parier.':'Who are you? Pick your name to bet.','Solde :':'Balance:','Gain possible :':'Possible win:','Choisis un vainqueur et ta mise.':'Pick a winner and your stake.',
-'Modifier mon pari':'Edit my bet','Parier':'Place bet','Aucun pari.':'No bets.','Solde insuffisant.':'Not enough balance.','Pari enregistré.':'Bet saved.','🏆 Ballons d’or':'🏆 Golden balls','Ballons d’or :':'Golden balls:','Groupe':'Group','Compte':'Account','Créer un compte':'Create an account','Optionnel. Garde tes groupes et tes stats sur tous tes téléphones.':'Optional. Keeps your groups and stats on all your phones.','Joueur 1':'Player 1','Joueur 2':'Player 2','invité':'guest','Nom de l’invité':'Guest name','+ Invité':'+ Guest','Nouveau joueur':'New player',
+'Modifier mon pari':'Edit my bet','Parier':'Place bet','Aucun pari.':'No bets.','Solde insuffisant.':'Not enough balance.','Pari enregistré.':'Bet saved.','🏆 Ballons d’or':'🏆 Golden balls','Ballons d’or :':'Golden balls:','Groupe':'Group','Compte':'Account','Créer un compte':'Create an account','Nécessaire pour jouer, voter, parier et créer un groupe. Sans compte : lecture seule.':'Required to play, vote, bet and create a group. Without one: view only.','Joueur 1':'Player 1','Joueur 2':'Player 2','invité':'guest','Nom de l’invité':'Guest name','+ Invité':'+ Guest','Nouveau joueur':'New player',
 'Les joueurs qui ont un compte apparaissent ici automatiquement. Ajoute les autres comme invités.':'Players with an account show up here automatically. Add the others as guests.',
 '« ':'“','Réservé à l’admin du groupe.':'Group admin only.','🔮 Pronostics':'🔮 Predictions','Cotes calculées selon les notes des joueurs':'Odds based on player ratings',
 'Cotes calculées selon les notes des joueurs · fermés au coup d’envoi':'Odds based on player ratings · closed at kick-off','Qui es-tu ? Choisis ton prénom pour pronostiquer.':'Who are you? Pick your name to predict.',
@@ -558,13 +560,13 @@ const EN={
 'Évolution des notes':'Rating trend','⚔️ Face à face':'⚔️ Head to head','Choisis deux joueurs.':'Pick two players.','Victoires':'Wins','Nuls':'Draws','Jamais l’un contre l’autre.':'Never played against each other.',
 '📊 Mes stats tous groupes':'📊 My stats, all groups','Mes stats tous groupes':'My stats, all groups','Aucun match joué pour l’instant.':'No matches played yet.','Groupes':'Groups','Groupe':'Group',
 'Supprimer mon compte':'Delete my account','Tape SUPPRIMER pour confirmer':'Type SUPPRIMER to confirm','Suppression…':'Deleting…','Compte supprimé.':'Account deleted.',
-'Ton compte, ton pseudo et tes liens joueur seront supprimés. Tes stats restent dans les groupes, sous ton nom de joueur. Action irréversible.':'Your account, username and player links will be deleted. Your stats stay in the groups under your player name. This cannot be undone.',
+'Ton compte et ton pseudo seront supprimés. Tes stats restent dans les groupes, sous ton nom de joueur. Action irréversible.':'Your account and username will be deleted. Your stats stay in the groups under your player name. This cannot be undone.',
 '📲 Installer l’app':'📲 Install the app','Installer l’app':'Install the app','App installée.':'App installed.','Depuis WhatsApp, ouvre d’abord le lien dans Safari.':'From WhatsApp, open the link in Safari first.',
 'Dans Safari : touche':'In Safari: tap','puis':'then','Sur l’écran d’accueil':'Add to Home Screen','Dans Chrome : menu':'In Chrome: menu','Installer l’application':'Install app','ou':'or','Ajouter à l’écran d’accueil':'Add to Home screen','OK':'OK','Mon compte':'My account','Créer mon compte':'Create my account','J’ai déjà un compte':'I already have an account','Se connecter':'Sign in','Se déconnecter':'Sign out',
 '👤 Créer mon compte / Se connecter':'👤 Create account / Sign in','👤 J’ai un compte : me connecter':'👤 I have an account: sign in','Gérer':'Manage','Compte :':'Account:','Pseudo':'Username','Pseudo :':'Username:',
 'Email (pour récupérer ton mot de passe)':'Email (to recover your password)','Confirmer le mot de passe':'Confirm password','Pseudo ou email':'Username or email','Mot de passe oublié ?':'Forgot password?',
-'Un compte permet de retrouver tes groupes, ton statut admin et ton joueur lié sur un autre téléphone.':'An account lets you get your groups, admin status and linked player back on another phone.',
-'Tes groupes, ton statut admin et ton joueur lié te suivent sur tous tes téléphones.':'Your groups, admin status and linked player follow you on all your phones.',
+'Sans compte, tu peux seulement regarder. Avec un compte, tu joues, votes et paries, sur tous tes téléphones.':'Without an account you can only watch. With one you play, vote and bet, on all your phones.',
+'Tes groupes, ton joueur et tes stats te suivent sur tous tes téléphones.':'Your groups, player and stats follow you on all your phones.',
 'Se déconnecter sur ce téléphone ? Tu retrouveras tout en te reconnectant.':'Sign out on this phone? You’ll get everything back when you sign in again.',
 'Cet email a déjà un compte. Utilise « J’ai déjà un compte ».':'This email already has an account. Use “I already have an account”.','Email invalide.':'Invalid email.',
 'Mot de passe trop faible (6 caractères min.).':'Password too weak (6 characters min.).','Pseudo/email ou mot de passe incorrect.':'Wrong username/email or password.','Trop d’essais. Réessaie plus tard.':'Too many attempts. Try again later.',
@@ -581,6 +583,7 @@ const EN={
 'en haut du script. Voir README.':'at the top of the script. See README.','Nom équipe A':'Team A name','Nom équipe B':'Team B name','A :':'A:','B :':'B:'
 };
 const ENRX=[
+[/^Nommer$/,'Make'],[/^Retirer les droits admin de$/,'Remove admin rights from'],
 [/^⚽ Match du (.+)$/,'⚽ Match on $1'],[/^Match du (.+)$/,'Match on $1'],[/^(.+) gagne$/,(m,a)=>tr(a)+' wins'],[/^Votes ouverts : (\d+)\/(\d+)$/,'Voting open: $1/$2'],
 [/^(\d+)\/(\d+) ont voté\. ✓ = vote reçu\.$/,'$1/$2 voted. ✓ = vote received.'],[/^\(passe : (.+)\)$/,'(assist: $1)'],[/^passe : (.+)$/,'assist: $1'],
 [/^But (.+)$/,(m,a)=>'Goal '+tr(a)],[/^Retirer (.+) de la liste \? Ses statistiques restent\.$/,'Remove $1 from the list? Their stats are kept.'],[/^Retirer (.+)$/,'Remove $1'],
@@ -658,6 +661,11 @@ document.addEventListener('pointerup',()=>{S.ptr=false;if(S.pending)setTimeout((
 document.addEventListener('pointercancel',()=>{S.ptr=false},true);
 $v.addEventListener('focusout',()=>{if(S.pending&&!S.ptr)setTimeout(()=>{if(S.pending&&!S.ptr)schedule()},60)});
 
+function roBanner(){return '<div class="card robar"><span>👀 Mode spectateur : crée un compte pour jouer, voter et parier.</span><button class="btn inline" data-acc="new">Créer un compte</button><button class="link" data-acc="log">Se connecter</button></div>'}
+function needAccount(){openModal('<h2>Compte nécessaire</h2><p style="margin-top:0">Sans compte, tu peux seulement regarder les matchs et les stats.</p><button class="btn" data-acc="new">Créer un compte</button><button class="btn ghost" data-acc="log">Se connecter</button><button class="btn ghost" id="nacl">Fermer</button>');$m.querySelector('#nacl').onclick=closeModal}
+const WR=new Set(['addPlayer','delPlayer','create','closeVotes','close','delPhoto','savePr','tStart','tPause','tReset','reopen','newMatch','addGoal','delGoal','saveVote','reset','delMatch','lastTeams','balance']);
+document.addEventListener('click',e=>{if(!S.anon||!S.group)return;const t=e.target.closest('[data-gt],[data-act],label.upl,[data-pk],[data-stk],[data-assign]');if(!t)return;
+  if(t.dataset.act&&!WR.has(t.dataset.act))return;e.preventDefault();e.stopPropagation();needAccount()},true);
 function render(){
   S.pending=false;
   renderBoard();
@@ -670,7 +678,7 @@ function render(){
   else if(!S.uid)h='<p class="muted">Chargement…</p>';
   else if(!S.group)h=vWelcome();
   else if(!S.ready)h='<p class="muted">Chargement…</p>'+(S.slow?'<p class="small muted">Étape : '+esc(S.step||'?')+' · reçu : '+Object.keys(S.got).filter(k=>S.got[k]).join(',')+(S.dbErr?' · erreur : '+esc(S.dbErr):'')+'</p>':'');
-  else h=({match:vMatch,vote:vVote,stats:vStats,hist:vHist})[S.tab]();
+  else h=(S.anon?roBanner():'')+({match:vMatch,vote:vVote,stats:vStats,hist:vHist})[S.tab]();
   $v.innerHTML=h;
 }
 (()=>{const l=document.querySelectorAll('.bgs div');let i=0;if(l.length<2||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -698,9 +706,9 @@ function renderBoard(){
 }
 function boardGoals(m){
   const gs=goalsOf(m),f=S.goalForm;
-  const li=g=>`<li><span class="g">${g.min?`<b>${g.min}’</b> `:''}⚽ ${g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))}${g.assist?`<small>passe : ${esc(pname(g.assist,m))}</small>`:''}</span><button class="x" data-act="delGoal" data-g="${g.id}" aria-label="Supprimer le but">×</button></li>`;
+  const li=g=>`<li><span class="g">${g.min?`<b>${g.min}’</b> `:''}⚽ ${g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))}${g.assist?`<small>passe : ${esc(pname(g.assist,m))}</small>`:''}</span>${S.anon?'':`<button class="x" data-act="delGoal" data-g="${g.id}" aria-label="Supprimer le but">×</button>`}</li>`;
   const lab=t=>{const n=tname(m,t);return n==='Équipe '+t?(t==='A'?'But équipe orange':'But équipe bleue'):'But '+n};
-  const tb=t=>`<button data-gt="${t}" class="${f.team===t?'on':''}" aria-pressed="${f.team===t}"><span class="dot ${t}"></span>${esc(lab(t))}</button>`;
+  const tb=t=>S.anon?'':`<button data-gt="${t}" class="${f.team===t?'on':''}" aria-pressed="${f.team===t}"><span class="dot ${t}"></span>${esc(lab(t))}</button>`;
   const col=t=>{const l=gs.filter(g=>g.team===t);return `<div class="bcol ${t}">${l.length?`<ul class="bgoals">${l.map(li).join('')}</ul>`:''}${tb(t)}</div>`};
   return `<div class="bcols">${col('A')}${col('B')}</div>`;
 }
@@ -716,24 +724,23 @@ function vMatch(){return vMatchIn()}
 function orgBar(){return S.isOrg?'<p style="text-align:center;margin-top:18px"><button class="link" data-act="orgOut">Quitter le mode organisateur</button></p>':'<p style="text-align:center;margin-top:18px"><button class="link" data-act="orgIn">Je suis l’organisateur</button></p>'}
 function vMatchIn(){
   const m=cur();
-  if(!m)return S.isOrg?vSetup():'<div class="empty"><p>Aucun match en cours.</p><p class="small">L’organisateur doit créer le match.</p></div>';
-  if(m.status==='closed')return resultCard(m)+motmCard(m)+shareBtn(m)+photoBlock(m)+(pronosOf(m.id).length?pronoCard(m):'')+rankCard(m)+(S.isOrg?'<button class="btn" data-act="newMatch">Nouveau match</button>':'');
+  if(!m)return S.anon?'<div class="empty"><p>Aucun match en cours.</p><p class="small">Un joueur avec un compte doit créer le match.</p></div>':vSetup();
+  if(m.status==='closed')return resultCard(m)+motmCard(m)+shareBtn(m)+photoBlock(m)+(pronosOf(m.id).length?pronoCard(m):'')+rankCard(m)+(S.anon?'':'<button class="btn" data-act="newMatch">Nouveau match</button>');
   if(m.status==='voting'){
     const voted=new Set(votesOf(m.id).map(v=>v.voter));
     return resultCard(m)+shareBtn(m)+photoBlock(m)+(pronosOf(m.id).length?pronoCard(m):'')+`<div class="card"><h2>Votes</h2>${lineup(m,voted)}<p class="small muted" style="margin:10px 0 0">${voted.size}/${parts(m).length} ont voté. ✓ = vote reçu.</p></div>`
-      +'<button class="btn" data-act="goVote">Noter les joueurs</button>'
-      +'<button class="btn ghost" data-act="closeVotes">Clôturer les votes et publier</button>'
-      +'<button class="btn ghost" data-act="reopen">Revenir au match (corriger buts ou score)</button>'
-      +'<button class="btn danger" data-act="newMatch">Abandonner et nouveau match</button>';
+      +(S.anon?'':'<button class="btn" data-act="goVote">Noter les joueurs</button><button class="btn ghost" data-act="closeVotes">Clôturer les votes et publier</button>')
+      +(isGAdmin()?'<button class="btn ghost" data-act="reopen">Revenir au match (corriger buts ou score)</button><button class="btn danger" data-act="newMatch">Abandonner et nouveau match</button>':'<p class="small muted" style="text-align:center">Seul un admin peut modifier le score d’un match terminé.</p>');
   }
   const t=m.timer,run=!!(t&&t.start);
   let ctl;
   if(!t)ctl='<button class="btn" data-act="tStart">▶ Lancer le match</button>';
   else if(run)ctl='<button class="btn ghost" data-act="tPause">⏸ Pause</button>';
   else ctl='<div class="row"><button class="btn" data-act="tStart">▶ Reprendre</button><button class="btn ghost" data-act="tReset">Remise à zéro</button></div>';
+  if(S.anon)ctl='';
   let h=goalFormCard(m)+(m.timer?'':pronoCard(m))+`<div class="card chrono crow"><div class="clockbig ${run?'run':''}" data-clock>${fmtClock(elapsed(m))}</div><div class="cbtns">${ctl}</div></div>`;
   h+=`<div class="card lcomp">${lineup(m)}</div>`;
-  h+='<div class="endrow"><button class="btn" data-act="close">Terminer le match</button><button class="btn danger" data-act="newMatch">Abandonner</button></div>';
+  if(!S.anon)h+='<div class="endrow"><button class="btn" data-act="close">Terminer le match</button><button class="btn danger" data-act="newMatch">Abandonner</button></div>';
   return h;
 }
 function lineup(m,voted){
@@ -793,19 +800,18 @@ function vVote(){
   if(m&&m.status==='open')return '<div class="empty"><p>Match en cours.</p><p class="small">Les votes s’ouvrent quand le match est terminé.</p></div>';
   if(!m||m.status!=='voting')return '<div class="empty"><p>Aucun vote ouvert.</p></div>';
   const mine=myPid();
-  if(mine&&!parts(m).includes(mine))return `<div class="empty"><p>${esc(pname(mine,m))} n’a pas joué ce match.</p><p class="small">Ce téléphone est lié à ${esc(pname(mine,m))}.</p><p><button class="link" data-act="unclaim">Ce n’est pas moi</button></p></div>`;
-  if(!S.voter||S.voter.mid!==m.id){
-    const ps=parts(m).slice().sort((x,y)=>pname(x,m).localeCompare(pname(y,m),'fr'));
-    const voted=new Set(votesOf(m.id).map(v=>v.voter));
-    return `<div class="card"><h2>Qui es-tu ?</h2><p class="small muted" style="margin-top:-4px">Choisis ton prénom une seule fois : ce téléphone y sera lié.</p><div class="pick">${ps.map(p=>{const tk=S.claims[p]&&S.claims[p]!==S.uid;return `<button data-act="pick" data-p="${p}" class="${tk?'taken':''}" ${tk?'aria-disabled="true"':''}><span class="dot ${teamOf(m,p)}"></span>${esc(pname(p,m))}${tk?'<span class="lk">🔒</span>':''}${voted.has(p)?'<span class="ck">✓</span>':''}</button>`}).join('')}</div></div>`;
-  }
+  if(S.anon)return '<div class="empty"><p>Crée un compte pour voter.</p><p class="small">Sans compte, tu peux seulement regarder.</p><p><button class="btn inline" data-acc="new">Créer un compte</button></p></div>';
+  if(!mine)return '<div class="empty"><p>Ton compte n’est pas encore joueur de ce groupe.</p><p class="small">Ça se fait tout seul, patiente quelques secondes.</p></div>';
+  if(!parts(m).includes(mine))return '<div class="empty"><p>Tu n’as pas joué ce match.</p><p class="small">Seuls les joueurs du match votent.</p></div>';
+  if(!S.voter||S.voter.mid!==m.id||S.voter.pid!==mine)autoVoter();
+  if(!S.voter||S.voter.mid!==m.id)return '<p class="muted">Chargement…</p>';
   const me=S.voter.pid,d=S.draft,existing=S.votes.find(v=>v.id===m.id+'__'+me);
   const others=parts(m).filter(p=>p!==me);
   const row=p=>{const r=d.ratings[p]||0;return `<div class="card rrow"><div class="rhead"><span class="dot ${teamOf(m,p)}"></span><span class="nm">${esc(pname(p,m))}</span><span class="val" data-val="${p}">${r||'–'}</span></div>
     <div class="rates" data-p="${p}" role="group" aria-label="Note de ${esc(pname(p,m))}">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-r="${n}" class="${n===r?'on':(n<r?'lit':'')}" aria-pressed="${n===r}">${n}</button>`).join('')}</div>
     <input class="cmt" data-c="${p}" maxlength="200" placeholder="Commentaire (optionnel)" value="${esc(d.comments[p]||'')}"></div>`};
   const vm=S.voteMsg;
-  return `<div class="card who"><span>Votant : <b>${esc(pname(me,m))}</b></span><button class="link" data-act="unclaim">Ce n’est pas moi</button></div>
+  return `<div class="card who"><span>Votant : <b>${esc(pname(me,m))}</b></span></div>
   ${existing?'<p class="small muted">Vote déjà envoyé. Modifiable jusqu’à la clôture.</p>':''}
   ${others.map(row).join('')}
   <div class="savebar"><p class="msg ${vm?vm.k:''}" id="vmsg">${vm?esc(vm.t):''}</p><button class="btn" data-act="saveVote">${existing?'Modifier mon vote':'Enregistrer mon vote'}</button></div>`;
@@ -882,8 +888,7 @@ function pronoCard(m){
   const tile=k=>`<button class="${d&&d.pick===k?'on':''}" ${d?`data-pk="${k}"`:'disabled'}>${k!=='N'?`<span class="dot ${k}"></span>`:''}${lab(k)}<b>${fmtOdd(od[k])}</b></button>`;
   let me='';
   if(!lock){
-    if(!mine){const vis=S.players.filter(p=>(p.uid||p.guest)&&!S.claims[p.id]).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
-      me=`<p class="small muted" style="margin:10px 0 6px">Qui es-tu ? Choisis ton prénom pour parier.</p><div class="chips">${vis.map(p=>`<button data-act="pick" data-p="${p.id}">${esc(p.name)}</button>`).join('')}</div>`}
+    if(!mine){me=S.anon?'<p class="small muted" style="margin:10px 0 0">Crée un compte pour parier.</p>':''}
     else{const bal=balanceOf(mine,m.id);d.stake=Math.max(0,Math.min(d.stake,bal));
       const chip=v=>`<button data-stk="${v}" class="${d.stake===(v==='all'?bal:v)?'on':''}">${v==='all'?'Tout':v}</button>`;
       me=`<p class="small" style="margin:12px 0 6px">Solde : <b>${boFmt(bal)}</b></p>
@@ -1032,7 +1037,7 @@ function vPlayer(pid){
 }
 function vStats(){
   if(S.playerView)return vPlayer(S.playerView);
-  const reset='<button class="btn danger" data-act="reset" style="margin-top:24px">🔒 Réinitialisation complète</button>';
+  const reset=isGAdmin()?'<button class="btn danger" data-act="reset" style="margin-top:24px">🔒 Réinitialisation complète</button>':'';
   const fin=finished();
   if(!fin.length)return '<div class="empty"><p>Aucun match terminé.</p></div>'+reset;
   const f=S.sf,ms=filteredMatches();
@@ -1075,6 +1080,7 @@ function photoBlock(m){
   const ph=S.photos[m.id];
   if(ph===undefined){S.photos[m.id]='loading';db.doc('meta/photo_'+m.id).get().then(d=>{S.photos[m.id]=d.exists?d.data().data:null;schedule()}).catch(()=>{S.photos[m.id]=null;schedule()})}
   const img=ph&&ph!=='loading'?`<div class="phwrap"><img class="photo" src="${ph}" alt="Photo du match"><button class="phx" data-act="delPhoto" data-m="${m.id}" aria-label="Supprimer la photo">×</button></div>`:'';
+  if(S.anon)return img.replace(/<button class="phx"[^>]*>×<\/button>/,'');
   return img+`<label class="upl">📷 ${img?'Changer la photo':'Ajouter une photo du match'}<input type="file" accept="image/*" data-photo="${m.id}"></label>`;
 }
 async function uploadPhoto(mid,file){
@@ -1111,7 +1117,7 @@ function vHist(){
     <div class="ps">A : ${names('A')}<br>B : ${names('B')}</div>
     ${goalsOf(m).length?`<div class="ps" style="margin-top:4px">Buts : ${goalsOf(m).map(g=>g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))).join(', ')}</div>`:''}
     <div class="m">MOTM : <b>${(m.motm||[]).length?m.motm.map(p=>esc(pname(p,m))).join(' & '):'–'}</b></div></button>
-    ${open?`<div class="hdetail">${motmCard(m)}${shareBtn(m)}${photoBlock(m)}${pronosOf(m.id).length?pronoCard(m):''}${rankCard(m)}<button class="btn danger" data-act="delMatch" data-m="${m.id}">🔒 Supprimer ce match</button></div>`:''}`;
+    ${open?`<div class="hdetail">${motmCard(m)}${shareBtn(m)}${photoBlock(m)}${pronosOf(m.id).length?pronoCard(m):''}${rankCard(m)}${isGAdmin()?`<button class="btn danger" data-act="delMatch" data-m="${m.id}">🔒 Supprimer ce match</button>`:''}</div>`:''}`;
   }).join('');
 }
 
@@ -1363,11 +1369,6 @@ $v.addEventListener('click',e=>{
   else if(act==='goVote'){S.tab='vote';render();window.scrollTo(0,0)}
   else if(act==='addGoal'){b.disabled=true;addGoal().finally(()=>{b.disabled=false})}
   else if(act==='delGoal')confirmBox('Supprimer ce but ?','Supprimer',()=>delGoal(b.dataset.g));
-  else if(act==='pick'){const p=b.dataset.p,m=cur();
-    if(S.claims[p]&&S.claims[p]!==S.uid){toast('Joueur déjà lié à un autre téléphone. Demande à l’admin.');return}
-    if(S.claims[p]===S.uid){autoVoter();render();return}
-    confirmBox(`Tu es <b>${esc(pname(p,m))}</b> ? Ce téléphone sera lié à ${esc(pname(p,m))} pour tous les votes.`,'Oui, c’est moi',()=>claimPlayer(p))}
-  else if(act==='unclaim'){const p=myPid();if(!p)return;confirmBox(`Délier ce téléphone de ${esc(pname(p,cur()))} ?`,'Délier',()=>releaseClaim(p))}
   else if(act==='logout'){S.voter=null;S.draft=null;S.voteMsg=null;render()}
   else if(act==='saveVote'){b.disabled=true;saveVote().finally(()=>{const x=$v.querySelector('[data-act="saveVote"]');if(x)x.disabled=false})}
   else if(act==='orgOut'){LS.del('foot5_org');refreshOrg();render()}
@@ -1412,7 +1413,7 @@ $v.addEventListener('keydown',e=>{
 });
 
 /* ---------- Données (Firestore) ---------- */
-function markReady(k){S.got[k]=1;if(!S.ready&&S.got.p&&S.got.m&&S.got.v&&S.got.s&&S.got.c)S.ready=true}
+function markReady(k){S.got[k]=1;if(!S.ready&&S.got.p&&S.got.m&&S.got.v&&S.got.s&&S.got.c){S.ready=true;setTimeout(()=>{autoVoter();maybeAutoJoin();migrateRoles();schedule()},0)}}
 function onErr(e,w){console.error(w,e);S.dbErr=(w?w+' : ':'')+((e&&(e.code||e.message))||'');if(e&&e.code==='permission-denied'&&S.group){lostAccess();return}S.noDb=true;render();
   clearTimeout(onErr.t);if((onErr.n=(onErr.n||0)+1)<=5)onErr.t=setTimeout(()=>{if(S.group)connect({...S.group})},4000)}
 let fs=null,raw=null,unsubs=[],auth=null;
@@ -1425,8 +1426,19 @@ function unsyncGroup(id){if(S.anon||!S.uid||!raw)return;raw.doc('users/'+S.uid).
 function myEntry(){return S.group?myGroups().find(x=>x.id===S.group.id)||null:null}
 function slugify(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)}
 const gHash=(id,pw)=>hashPin('grp',id,pw),aHash=(id,pw)=>hashPin('adm',id,pw);
-function isGAdmin(){return !!(S.me&&S.me.adm)}
-function myPid(){if(!S.uid)return null;for(const p in S.claims)if(S.claims[p]===S.uid)return p;return null}
+function isGOwner(){return !!(S.gdoc&&S.uid&&S.gdoc.owner===S.uid)}
+function isGAdmin(){const g=S.gdoc;if(!g||!S.uid)return false;if(g.owner===S.uid||(g.admins||[]).includes(S.uid))return true;return !g.roles&&!!(S.me&&S.me.adm)}
+function myPid(){if(!S.uid||S.anon)return null;const p=S.players.find(x=>x.uid===S.uid);return p?p.id:null}
+function syncAdm(){const e=myEntry();if(!e||!S.gdoc)return;const a=isGAdmin();if(!!e.adm!==a)upsertGroup({...e,adm:a})}
+const rolesDone={};
+async function migrateRoles(){
+  const g=S.group,gd=S.gdoc;if(!g||!gd||gd.roles||rolesDone[g.id]||!S.me)return;
+  const own=gd.owner===S.uid,leg=S.me.adm;if(!own&&!leg)return;rolesDone[g.id]=1;
+  try{const ms=await raw.col('groups/'+g.id+'/members').get();
+    const ad=ms.docs.filter(d=>{const a=d.data().adm;return a&&(own||a===leg)&&d.id!==gd.owner}).map(d=>d.id);
+    const up={admins:ad,roles:2};if(!gd.owner)up.owner=S.uid;if(gd.adminHash)up.adminHash=deleteField();
+    await raw.doc('groups/'+g.id).update(up)}catch(e){console.error(e);rolesDone[g.id]=0}
+}
 function joinLink(){return location.href.split('#')[0].split('?')[0]+'#g='+encodeURIComponent(S.group.id)+'&k='+S.gdoc.k}
 function renderPill(){
   const p=document.getElementById('gpill');document.body.classList.toggle('nogroup',!S.group&&!S.noConf);
@@ -1441,7 +1453,7 @@ function vWelcome(){
   ${l.length?`<div class="card"><h2>Mes groupes</h2><div class="glist">${l.map(g=>`<button data-gsw="${esc(g.id)}"><span>${esc(g.name)}</span><small>${g.adm?'admin':''}</small></button>`).join('')}</div></div>`:''}
   <div class="card wbox"><h2>Groupe</h2><button class="btn" data-act="gJoin">Rejoindre un groupe</button>
   <button class="btn ghost" data-act="gCreate">Créer un groupe</button></div>
-  <div class="card wbox"><h2>Compte</h2>${S.anon?'<p class="small muted" style="margin:-4px 0 10px">Optionnel. Garde tes groupes et tes stats sur tous tes téléphones.</p><button class="btn ghost" data-acc="new">Créer un compte</button><button class="btn ghost" data-acc="log">Se connecter</button>':accountLine()}</div>
+  <div class="card wbox"><h2>Compte</h2>${S.anon?'<p class="small muted" style="margin:-4px 0 10px">Nécessaire pour jouer, voter, parier et créer un groupe. Sans compte : lecture seule.</p><button class="btn ghost" data-acc="new">Créer un compte</button><button class="btn ghost" data-acc="log">Se connecter</button>':accountLine()}</div>
   <div class="card wbox">${installBtn()}${langSeg()}</div>`;
 }
 $v.addEventListener('click',e=>{const b=e.target.closest('[data-gsw]');if(b)switchGroup(b.dataset.gsw);const l=e.target.closest('[data-lang]');if(l)setLang(l.dataset.lang)});
@@ -1469,7 +1481,7 @@ async function migrateAdmin(g,gd){
 }
 function connect(g){
   unsubs.forEach(u=>{try{u()}catch(_){}});unsubs=[];
-  Object.assign(S,{group:g,gdoc:null,me:null,claims:{},gotClaims:false,pronos:[],prDraft:null,h2h:{a:'',b:''},players:[],matches:[],votes:[],meta:null,config:{},got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,
+  Object.assign(S,{group:g,gdoc:null,me:null,claims:{},gotClaims:true,pronos:[],prDraft:null,h2h:{a:'',b:''},players:[],matches:[],votes:[],meta:null,config:{},got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,
     voter:null,draft:null,voteMsg:null,playerView:null,openHist:null,photos:{},tab:'match',openCm:new Set(),
     sf:{mode:'all',n:5,from:'',to:'',players:[]},goalForm:{team:'',scorer:'',assist:''},closeForm:{sA:'',sB:'',winner:''}});
   S.setup.assign={};S.setup.nameA='';S.setup.nameB='';S.setup.newName='';
@@ -1492,12 +1504,11 @@ function subscribe(g){
     const gd=d.data(),e=myGroups().find(x=>x.id===g.id);
     if(e&&gd.k&&e.k!==gd.k)upsertGroup({...e,k:gd.k,mem:S.uid});
     S.gdoc=gd;if(e&&gd.name&&gd.name!==e.name){S.group.name=gd.name;upsertGroup({...e,name:gd.name})}
-    if(!mig&&gd.adminHash){mig=true;migrateAdmin(g,gd)}
+    syncAdm();migrateRoles();
     schedule()},e=>onErr(e,'groupe')));
   unsubs.push(db.doc('members/'+S.uid).onSnapshot(d=>{S.me=d.exists?d.data():null;
-    const e=myEntry();if(e&&S.me&&!!S.me.adm!==!!e.adm)upsertGroup({...e,adm:S.me.adm||''});maybeAutoJoin();schedule()},e=>onErr(e,'membre')));
-  unsubs.push(db.collection('claims').onSnapshot(s=>{const c={};s.docs.forEach(d=>{c[d.id]=d.data().uid});S.claims=c;S.gotClaims=true;autoVoter();maybeAutoJoin();schedule()},e=>onErr(e,'claims')));
-  unsubs.push(db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));markReady('p');maybeAutoJoin();schedule()},e=>onErr(e,'players')));
+    syncAdm();migrateRoles();maybeAutoJoin();schedule()},e=>onErr(e,'membre')));
+  unsubs.push(db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));markReady('p');autoVoter();maybeAutoJoin();schedule()},e=>onErr(e,'players')));
   unsubs.push(db.collection('matches').onSnapshot(s=>{S.matches=s.docs.map(d=>({id:d.id,...d.data()}));markReady('m');
     const m=cur();if(S.voter&&(!m||m.id!==S.voter.mid||m.status!=='voting')){S.voter=null;S.draft=null}
     autoVoter();schedule()},e=>onErr(e,'matches')));
@@ -1513,29 +1524,20 @@ function autoVoter(){
   const ex=S.votes.find(v=>v.id===m.id+'__'+me);
   S.voter={mid:m.id,pid:me};S.voteMsg=null;S.draft={ratings:{...((ex&&ex.ratings)||{})},comments:{...((ex&&ex.comments)||{})}};
 }
-let autoBusy=false;
+let autoBusy=false;const autoTried={};
 async function maybeAutoJoin(){
-  if(!S.anon&&S.ready&&S.gotClaims){const mp=myPid(),pl=mp&&S.players.find(x=>x.id===mp);if(pl&&pl.uid!==S.uid&&!autoBusy){autoBusy=true;db.doc('players/'+mp).update({uid:S.uid}).catch(()=>{}).finally(()=>{autoBusy=false})}}
-  if(autoBusy||S.anon||!S.pseudo||!S.group||!S.ready||!S.me||S.me.auto||!S.gotClaims||myPid())return;
-  autoBusy=true;const gid=S.group.id;
+  if(autoBusy||S.anon||!S.pseudo||!S.group||!S.ready||!S.me||myPid())return;
+  const gid=S.group.id;if(autoTried[gid])return;autoTried[gid]=1;autoBusy=true;
   try{
-    const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-    const ex=S.players.find(x=>norm(x.name)===norm(S.pseudo)&&!S.claims[x.id]);
-    const pid=ex?ex.id:rid('p');
-    if(!ex)await db.doc('players/'+pid).set({name:S.pseudo,createdAt:Date.now(),uid:S.uid});else await db.doc('players/'+pid).update({uid:S.uid});
-    await db.doc('claims/'+pid).set({uid:S.uid,at:Date.now()});
-    await db.doc('members/'+S.uid).set({auto:true},{merge:true});
-    if(S.group&&S.group.id===gid){S.claims={...S.claims,[pid]:S.uid};render();toast('Tu es ajouté au groupe comme '+S.pseudo+'.')}
-  }catch(e){console.error(e)}finally{autoBusy=false}
-}
-async function claimPlayer(pid){
-  const m=cur();
-  try{await db.doc('claims/'+pid).set({uid:S.uid,at:Date.now()});if(!S.anon)db.doc('players/'+pid).update({uid:S.uid}).catch(()=>{});S.claims={...S.claims,[pid]:S.uid};autoVoter();render();window.scrollTo(0,0);toast('Ce téléphone est lié à '+pname(pid,m)+'.')}
-  catch(e){toast(e&&e.code==='permission-denied'?'Joueur déjà lié à un autre téléphone.':errMsg(e))}
-}
-async function releaseClaim(pid,silent){
-  try{const pl=S.players.find(x=>x.id===pid);if(pl&&pl.uid&&(pl.uid===S.claims[pid]))db.doc('players/'+pid).update({uid:deleteField(),guest:true}).catch(()=>{});await db.doc('claims/'+pid).delete();const c={...S.claims};delete c[pid];S.claims=c;if(S.voter&&S.voter.pid===pid){S.voter=null;S.draft=null}render();if(!silent)toast('Lien supprimé.')}
-  catch(e){toast(errMsg(e))}
+    const nn=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    let pid=null;
+    try{const cs=await db.collection('claims').get();const c=cs.docs.find(d=>d.data().uid===S.uid);if(c&&S.players.some(x=>x.id===c.id&&!x.uid))pid=c.id}catch(_){}
+    if(!pid){const ex=S.players.find(x=>!x.uid&&nn(x.name)===nn(S.pseudo));if(ex)pid=ex.id}
+    if(pid)await db.doc('players/'+pid).update({uid:S.uid});
+    else{pid=rid('p');await db.doc('players/'+pid).set({name:S.pseudo,createdAt:Date.now(),uid:S.uid})}
+    const first=!S.me.auto;await db.doc('members/'+S.uid).set({auto:true},{merge:true});
+    if(first&&S.group&&S.group.id===gid)toast('Tu es ajouté au groupe comme '+pname(pid)+'.');
+  }catch(e){console.error(e);setTimeout(()=>{autoTried[gid]=0;schedule()},10000)}finally{autoBusy=false}
 }
 function kick(id,msg){saveGroups(myGroups().filter(x=>x.id!==id));unsyncGroup(id);const n=myGroups()[0];toast(msg);connect(n?{id:n.id,name:n.name}:null)}
 function switchGroup(id){const g=myGroups().find(x=>x.id===id);closeModal();if(g&&(!S.group||S.group.id!==id)){connect({id:g.id,name:g.name});window.scrollTo(0,0)}}
@@ -1560,26 +1562,23 @@ function gJoin(){
   });
 }
 function gCreate(){
+  if(S.anon){openModal('<h2>Créer un groupe</h2><p style="margin-top:0">Il faut un compte pour créer un groupe : tu en seras l’admin.</p><button class="btn" data-acc="new">Créer un compte</button><button class="btn ghost" data-acc="log">Se connecter</button><button class="btn ghost" id="nacl">Fermer</button>');$m.querySelector('#nacl').onclick=closeModal;return}
   formModal(`<h2>Créer un groupe</h2>
   <label class="fld">Nom du groupe<input id="gname" type="text" autocomplete="off" placeholder="Les Poteaux"></label>
   <p class="small muted" id="gslug" style="margin:-4px 0 10px"></p>
   <label class="fld">Mot de passe du groupe (pour les potes)<input id="gpw" type="password" autocomplete="off"></label>
   <label class="fld">Confirmer le mot de passe du groupe<input id="gpw2" type="password" autocomplete="off"></label>
-  <label class="fld">Mot de passe admin (pour toi seul)<input id="gapw" type="password" autocomplete="off"></label>
-  <label class="fld">Confirmer le mot de passe admin<input id="gapw2" type="password" autocomplete="off"></label>
+  <p class="small muted" style="margin:-2px 0 10px">Tu seras l’admin du groupe. Tu pourras nommer d’autres admins.</p>
   ${S.legacy?'<label class="chk"><input type="checkbox" id="gimp"><span>Importer les joueurs, matchs et stats de l’ancienne version du site</span></label>':''}`,async err=>{
-    const name=val('gname').trim(),id=slugify(name),pw=val('gpw'),apw=val('gapw');
+    const name=val('gname').trim(),id=slugify(name),pw=val('gpw');
     if(id.length<3){err.textContent='Nom trop court (3 caractères min.).';return}
-    if(pw.length<4||apw.length<4){err.textContent='Mots de passe : 4 caractères min.';return}
+    if(pw.length<4){err.textContent='Mot de passe : 4 caractères min.';return}
     if(pw!==val('gpw2')){err.textContent='Les mots de passe du groupe ne correspondent pas.';return}
-    if(apw!==val('gapw2')){err.textContent='Les mots de passe admin ne correspondent pas.';return}
-    if(pw===apw){err.textContent='Le mot de passe admin doit être différent.';return}
     try{const d=await raw.doc('groups/'+id).get();if(d.exists){err.textContent='Ce nom est déjà pris.';return}}catch(_){}
-    const k=await gHash(id,pw),adm=await aHash(id,apw),P='groups/'+id+'/';
-    try{await raw.doc('groups/'+id).set({name,k,owner:S.uid,createdAt:Date.now()})}catch(e){if(e&&e.code==='permission-denied'){err.textContent='Ce nom est déjà pris.';return}throw e}
-    await raw.doc(P+'private/admin').set({hash:adm});
-    await raw.doc(P+'members/'+S.uid).set({k,adm,joinedAt:Date.now()});
-    upsertGroup({id,name,k,adm,mem:S.uid});
+    const k=await gHash(id,pw),P='groups/'+id+'/';
+    try{await raw.doc('groups/'+id).set({name,k,owner:S.uid,admins:[],roles:2,createdAt:Date.now()})}catch(e){if(e&&e.code==='permission-denied'){err.textContent='Ce nom est déjà pris.';return}throw e}
+    await raw.doc(P+'members/'+S.uid).set({k,joinedAt:Date.now()});
+    upsertGroup({id,name,k,adm:true,mem:S.uid});
     const imp=$m.querySelector('#gimp');
     if(imp&&imp.checked){err.className='msg';err.textContent='Import en cours…';await importLegacy(id)}
     closeModal();connect({id,name});toast('Groupe créé.');
@@ -1594,12 +1593,27 @@ async function importLegacy(id){
   }
   await raw.doc('meta/legacy').set({to:id,at:Date.now()});S.legacy=false;
 }
-function claimsBlock(adm){
-  const mine=myPid();
-  let h=`<p class="small" style="margin:4px 0 12px">${mine?`Ce téléphone : <b>${esc(pname(mine))}</b> <button class="link" data-rel="${mine}">Ce n’est pas moi</button>`:'<span class="muted">Ce téléphone n’est lié à aucun joueur. Il le sera au premier vote.</span>'}</p>`;
-  if(adm){const ids=Object.keys(S.claims).filter(p=>p!==mine).sort((a,b)=>pname(a).localeCompare(pname(b)));
-    if(ids.length)h+=`<h2 style="margin-top:4px">Téléphones liés</h2><div class="glist">${ids.map(p=>`<button data-rel="${p}"><span>${esc(pname(p))}</span><small>Délier</small></button>`).join('')}</div>`}
+function adminsBlock(){
+  const g=S.gdoc;if(!g)return '';
+  const nm=u=>{const p=S.players.find(x=>x.uid===u);return p?p.name:null};
+  const ad=(g.admins||[]).map(nm).filter(Boolean);
+  let h=`<p class="small muted" style="margin:0 0 12px">Admin principal : <b>${esc(nm(g.owner)||tr('le créateur'))}</b>${ad.length?`<br>Autres admins : <b>${esc(ad.join(', '))}</b>`:''}</p>`;
+  if(isGOwner())h+='<button class="btn ghost" id="gadmins">👑 Gérer les admins</button>';
   return h;
+}
+function adminsModal(){
+  const g=S.gdoc;if(!g||!isGOwner())return;
+  const ad=new Set(g.admins||[]);
+  const ps=S.players.filter(p=>p.uid&&p.uid!==S.uid).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const extra=[...ad].filter(u=>!ps.some(p=>p.uid===u));
+  const row=(u,n,on)=>`<button data-adm="${esc(u)}" class="${on?'on':''}"><span>${esc(n)}</span><small>${on?'Admin ✓':'Nommer admin'}</small></button>`;
+  openModal(`<h2>👑 Admins</h2><p class="small muted" style="margin-top:0">Un admin peut corriger un match terminé, supprimer des votes ou des matchs et changer le mot de passe du groupe. Seuls les joueurs avec un compte peuvent être nommés.</p>
+  ${ps.length||extra.length?`<div class="glist">${ps.map(p=>row(p.uid,p.name,ad.has(p.uid))).join('')}${extra.map(u=>row(u,tr('Ancien admin sans compte'),true)).join('')}</div>`:'<p class="muted">Aucun autre joueur avec un compte.</p>'}
+  <button class="btn ghost" id="admx">Fermer</button>`);
+  $m.querySelector('#admx').onclick=closeModal;
+  $m.querySelectorAll('[data-adm]').forEach(b=>b.onclick=()=>{const u=b.dataset.adm,on=ad.has(u),n=b.querySelector('span').textContent;
+    confirmBox(on?`Retirer les droits admin de <b>${esc(n)}</b> ?`:`Nommer <b>${esc(n)}</b> admin du groupe ?`,on?'Retirer':'Nommer admin',async()=>{
+      try{await raw.doc('groups/'+S.group.id).update({admins:on?arrayRemove(u):arrayUnion(u),roles:2});toast(on?'Droits admin retirés.':'Nouvel admin nommé.')}catch(e){toast(errMsg(e))}})});
 }
 const PSEUDO_RE=/^[a-z0-9_.]{3,20}$/;
 function authErr(e){const c=(e&&e.code)||'';
@@ -1614,11 +1628,11 @@ function authErr(e){const c=(e&&e.code)||'';
 function accountLine(){return S.anon?`<button class="btn ghost" data-acc="1">👤 Créer mon compte / Se connecter</button>`:`<p class="small" style="margin:0 0 12px">Compte : <b>${esc(S.pseudo||S.email)}</b> <button class="link" data-acc="1">Gérer</button></p>`}
 function accountMenu(){
   if(!S.anon){openModal(`<h2>Mon compte</h2><p style="margin-top:0">Pseudo : <b>${esc(S.pseudo)}</b><br><span class="small muted">${esc(S.email)}</span></p>
-    <p class="small muted">Tes groupes, ton statut admin et ton joueur lié te suivent sur tous tes téléphones.</p>
+    <p class="small muted">Tes groupes, ton joueur et tes stats te suivent sur tous tes téléphones.</p>
     <button class="btn" id="aglob">📊 Mes stats tous groupes</button><button class="btn ghost" id="aout">Se déconnecter</button><button class="btn danger" id="adel">Supprimer mon compte</button><button class="btn ghost" id="aclose">Fermer</button>`);
     $m.querySelector('#aclose').onclick=closeModal;$m.querySelector('#aglob').onclick=globalStats;$m.querySelector('#adel').onclick=deleteAccountForm;
     $m.querySelector('#aout').onclick=()=>confirmBox('Se déconnecter sur ce téléphone ? Tu retrouveras tout en te reconnectant.','Se déconnecter',doLogout);return}
-  openModal(`<h2>Mon compte</h2><p class="small muted" style="margin-top:0">Un compte permet de retrouver tes groupes, ton statut admin et ton joueur lié sur un autre téléphone.</p>
+  openModal(`<h2>Mon compte</h2><p class="small muted" style="margin-top:0">Sans compte, tu peux seulement regarder. Avec un compte, tu joues, votes et paries, sur tous tes téléphones.</p>
     <button class="btn" id="anew">Créer mon compte</button><button class="btn ghost" id="alog">J’ai déjà un compte</button><button class="btn ghost" id="aclose">Fermer</button>`);
   $m.querySelector('#aclose').onclick=closeModal;$m.querySelector('#anew').onclick=signupForm;$m.querySelector('#alog').onclick=loginForm;
 }
@@ -1655,8 +1669,6 @@ function loginForm(){
     const id=val('lid'),pw=val('lpw');if(!id||!pw){err.textContent='Remplis les deux champs.';return}
     let em;try{em=await resolveEmail(id)}catch(e){err.textContent=errMsg(e);return}
     if(!em){err.textContent='Pseudo/email ou mot de passe incorrect.';return}
-    const old=S.uid,mine=myPid();
-    if(mine&&S.group){try{await db.doc('claims/'+mine).delete()}catch(_){}}
     let cred;try{cred=await signInWithEmailAndPassword(auth,em,pw)}catch(e){err.textContent=authErr(e);return}
     const uid=cred.user.uid;
     try{const d=await raw.doc('users/'+uid).get();const gs=(d.exists&&d.data().groups)||{};
@@ -1678,7 +1690,7 @@ async function globalStats(){
   $m.querySelector('#gsc').onclick=closeModal;
   const rows=[],tot={mj:0,v:0,n:0,d:0,g:0,pd:0,motm:0,sum:0,cnt:0};
   for(const gr of myGroups()){
-    try{const P='groups/'+gr.id+'/';const cs=await raw.col(P+'claims').get();const cl=cs.docs.find(d=>d.data().uid===S.uid);if(!cl)continue;
+    try{const P='groups/'+gr.id+'/';const cs=await raw.col(P+'players').get();const cl=cs.docs.find(d=>d.data().uid===S.uid);if(!cl)continue;
       const ms=(await raw.col(P+'matches').get()).docs.map(d=>({id:d.id,...d.data()})).filter(m=>m.status==='voting'||m.status==='closed').sort((a,b)=>(a.date||'').localeCompare(b.date||''));
       const x=computeStats(ms).find(y=>y.p===cl.id);if(!x)continue;
       rows.push({name:gr.name||gr.id,x});for(const k in tot)tot[k]+=x[k]||0;
@@ -1692,7 +1704,7 @@ async function globalStats(){
   <div class="tbl"><table><thead><tr><th>Groupe</th><th>MJ</th><th>%V</th><th>Moy.</th><th>Buts</th><th>PD</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.x.mj}</td><td>${Math.round(r.x.wr)}</td><td>${fmt1(r.x.avg)}</td><td>${r.x.g}</td><td>${r.x.pd}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function deleteAccountForm(){
-  formModal(`<h2>Supprimer mon compte</h2><p class="small" style="margin-top:0">Ton compte, ton pseudo et tes liens joueur seront supprimés. Tes stats restent dans les groupes, sous ton nom de joueur. Action irréversible.</p>
+  formModal(`<h2>Supprimer mon compte</h2><p class="small" style="margin-top:0">Ton compte et ton pseudo seront supprimés. Tes stats restent dans les groupes, sous ton nom de joueur. Action irréversible.</p>
   <label class="fld">Mot de passe<input id="dpw" type="password" autocomplete="current-password"></label>
   <label class="fld">Tape SUPPRIMER pour confirmer<input id="dword" type="text" autocomplete="off"></label>`,async err=>{
     if(val('dword').trim().toUpperCase()!=='SUPPRIMER'){err.textContent='Mot incorrect.';return}
@@ -1700,7 +1712,7 @@ function deleteAccountForm(){
     try{await reauthenticateWithCredential(u,EmailAuthProvider.credential(u.email,val('dpw')))}catch(e){err.textContent=authErr(e);return}
     err.className='msg';err.textContent='Suppression…';
     for(const gr of myGroups()){const P='groups/'+gr.id+'/';
-      try{const cs=await raw.col(P+'claims').get();for(const d of cs.docs)if(d.data().uid===S.uid){try{await raw.doc(P+'players/'+d.id).update({uid:deleteField(),guest:true})}catch(_){}await raw.doc(P+'claims/'+d.id).delete()}}catch(_){}
+      try{const cs=await raw.col(P+'players').get();for(const d of cs.docs)if(d.data().uid===S.uid){try{await raw.doc(P+'players/'+d.id).update({uid:deleteField(),guest:true})}catch(_){}}}catch(_){}
       try{await raw.doc(P+'members/'+S.uid).delete()}catch(_){}}
     try{if(S.pseudo)await raw.doc('usernames/'+S.pseudo).delete()}catch(_){}
     try{await raw.doc('users/'+S.uid).delete()}catch(_){}
@@ -1729,8 +1741,8 @@ function groupMenu(){
   <p class="small muted" style="margin-top:-4px">Identifiant : <span class="gid">${esc(g.id)}</span>${adm?' · tu es admin':''}</p>
   ${adm?`<button class="btn" id="gshare" style="background:#25D366">Partager l’accès au groupe</button>
   <button class="btn ghost" id="gcopy">Copier le lien d’invitation</button>
-  <button class="btn ghost" id="gpwc">Changer le mot de passe du groupe</button>`:`<button class="btn ghost" id="gadm">Je suis l’admin</button>`}
-  ${accountLine()}${claimsBlock(adm)}
+  <button class="btn ghost" id="gpwc">Changer le mot de passe du groupe</button>`:''}
+  ${adminsBlock()}${accountLine()}
   ${l.length>1?`<h2 style="margin-top:14px">Mes autres groupes</h2><div class="glist">${l.filter(x=>x.id!==g.id).map(x=>`<button data-gsw="${esc(x.id)}"><span>${esc(x.name)}</span><small>${x.adm?'admin':''}</small></button>`).join('')}</div>`:''}
   <button class="btn ghost" id="gjoin">Rejoindre un autre groupe</button>
   <button class="btn ghost" id="gnew">Créer un groupe</button>
@@ -1739,7 +1751,7 @@ function groupMenu(){
   const on=(id,f)=>{const b=$m.querySelector('#'+id);if(b)b.onclick=f};
   $m.querySelectorAll('[data-gsw]').forEach(b=>b.onclick=()=>switchGroup(b.dataset.gsw));
   on('gclose',closeModal);on('gjoin',gJoin);on('gnew',gCreate);
-  $m.querySelectorAll('[data-rel]').forEach(b=>b.onclick=()=>{const p=b.dataset.rel;confirmBox(`Délier ${esc(pname(p))} de son téléphone ? Il pourra se relier depuis un autre téléphone.`,'Délier',()=>releaseClaim(p))});
+  on('gadmins',adminsModal);
   on('gshare',()=>{const t=trLines(`⚽ Rejoins le groupe « ${g.name} » pour noter nos matchs de foot à 5 :\n${joinLink()}`);
     if(navigator.share){navigator.share({text:t}).catch(()=>{});return}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')});
   on('gcopy',async()=>{try{await navigator.clipboard.writeText(joinLink());toast('Lien copié.')}catch(e){prompt(tr('Copie ce lien :'),joinLink())}});
@@ -1750,11 +1762,6 @@ function groupMenu(){
       if(pw!==val('gpw2')){err.textContent='Les mots de passe ne correspondent pas.';return}
       const k=await gHash(g.id,pw);await raw.doc('groups/'+g.id).update({k});upsertGroup({...myEntry(),k,mem:''});
       await raw.doc('groups/'+g.id+'/members/'+S.uid).set({k},{merge:true});upsertGroup({...myEntry(),mem:S.uid});closeModal();toast('Mot de passe changé.')}));
-  on('gadm',()=>formModal(`<h2>Mode admin</h2><label class="fld">Mot de passe admin<input id="gapw" type="password" autocomplete="off"></label>`,async err=>{
-      const h=await aHash(g.id,val('gapw'));
-      if(S.gdoc&&S.gdoc.adminHash){if(h!==S.gdoc.adminHash){err.textContent='Mot de passe incorrect.';return}upsertGroup({...myEntry(),adm:h});await migrateAdmin(g,S.gdoc)}
-      else{try{await raw.doc('groups/'+g.id+'/members/'+S.uid).set({adm:h},{merge:true})}catch(e){if(e&&e.code==='permission-denied'){err.textContent='Mot de passe incorrect.';return}throw e}upsertGroup({...myEntry(),adm:h})}
-      closeModal();toast('Tu es admin de ce groupe.');render()}));
   on('gleave',()=>confirmBox(`Quitter « ${esc(g.name)} » sur ce téléphone ? Le groupe et ses données restent. Il faudra le mot de passe pour revenir.`,'Quitter',()=>kick(g.id,'Groupe quitté.')));
 }
 async function copyInvite(){if(!S.group||!S.gdoc)return;const l=joinLink();try{await navigator.clipboard.writeText(l);toast('Lien d’invitation copié.')}catch(e){prompt(tr('Copie ce lien :'),l)}}
