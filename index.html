@@ -415,6 +415,19 @@ body.nogroup .tabs{display:none}
 .h2h tbody td{font:700 20px/1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",system-ui,sans-serif}
 .h2h tbody tr+tr td,.h2h tbody tr+tr th{border-top:1px solid var(--line)}
 .addrow .btn.inline{white-space:nowrap}
+.welcome{padding:18px 16px}
+.welcome h2{font-size:26px;margin-bottom:6px}
+.wbox .btn.ghost{background:var(--bg)}
+.wbox .btn:last-child,.wbox .langseg:last-child{margin-bottom:0}
+.wbox .langseg{margin:0}
+.odds button{background:var(--bg);border:2px solid transparent;border-radius:12px;padding:8px 6px;text-align:center;font-size:13px;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.odds button b{display:block;font:800 22px/1.1 -apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",system-ui,sans-serif;margin-top:2px;font-variant-numeric:tabular-nums}
+.odds button.on{border-color:var(--pitch);background:color-mix(in srgb,var(--pitch) 16%,var(--bg))}
+.odds button:disabled{opacity:1}
+.stakerow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.stakerow .chips{margin:0}
+.stakerow .stepper b{font-size:32px;min-width:56px}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 </style>
 </head>
 <body>
@@ -441,7 +454,7 @@ const firebaseConfig={
 };
 /* =========================================================================================================== */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,doc,collection,setDoc,updateDoc,deleteDoc,getDocs,getDoc,onSnapshot,arrayUnion,arrayRemove,deleteField} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,memoryLocalCache,doc,collection,setDoc,updateDoc,deleteDoc,getDocs,getDoc,onSnapshot,arrayUnion,arrayRemove,deleteField} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {getAuth,signInAnonymously,onAuthStateChanged,EmailAuthProvider,linkWithCredential,signInWithEmailAndPassword,sendPasswordResetEmail,signOut,updateProfile,reauthenticateWithCredential,deleteUser} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const S={players:[],matches:[],votes:[],meta:null,config:{},noConf:false,got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,isOrg:false,
@@ -534,7 +547,9 @@ const EN={
 'Win rate':'Win rate','ce joueur':'this player','Échec de l’envoi de la photo.':'Photo upload failed.','Équipe':'Team','Équipe A':'Team A','Équipe B':'Team B',
 '← Retour aux stats':'← Back to stats','↺ Réinitialiser les filtres':'↺ Reset filters','⏸ Pause':'⏸ Pause','▶ Lancer le match':'▶ Kick off','▶ Reprendre':'▶ Resume',
 '⚖ Équilibrer les équipes (selon les notes)':'⚖ Balance teams (by ratings)','⚽ Meilleurs buteurs':'⚽ Top scorers','🅰️ Meilleurs passeurs':'🅰️ Top assists','🔒 Réinitialisation complète':'🔒 Full reset',
-'buts':'goals','PD':'ast','0 vote':'0 votes','Identifiant :':'ID:','Code :':'Code:','Date':'Date','Pause':'Pause','Vote':'Vote','Inviter ses amis':'Invite friends','Langue':'Language','Joueur 1':'Player 1','Joueur 2':'Player 2','invité':'guest','Nom de l’invité':'Guest name','+ Invité':'+ Guest','Nouveau joueur':'New player',
+'buts':'goals','PD':'ast','0 vote':'0 votes','Identifiant :':'ID:','Code :':'Code:','Date':'Date','Pause':'Pause','Vote':'Vote','Inviter ses amis':'Invite friends','Langue':'Language','🏆 Paris':'🏆 Bets','Cotes selon les notes des joueurs':'Odds based on player ratings','Cotes selon les notes des joueurs · fermés au coup d’envoi':'Odds based on player ratings · closed at kick-off',
+'Qui es-tu ? Choisis ton prénom pour parier.':'Who are you? Pick your name to bet.','Solde :':'Balance:','Gain possible :':'Possible win:','Choisis un vainqueur et ta mise.':'Pick a winner and your stake.',
+'Modifier mon pari':'Edit my bet','Parier':'Place bet','Aucun pari.':'No bets.','Solde insuffisant.':'Not enough balance.','Pari enregistré.':'Bet saved.','🏆 Ballons d’or':'🏆 Golden balls','Ballons d’or :':'Golden balls:','Groupe':'Group','Compte':'Account','Créer un compte':'Create an account','Optionnel. Garde tes groupes et tes stats sur tous tes téléphones.':'Optional. Keeps your groups and stats on all your phones.','Joueur 1':'Player 1','Joueur 2':'Player 2','invité':'guest','Nom de l’invité':'Guest name','+ Invité':'+ Guest','Nouveau joueur':'New player',
 'Les joueurs qui ont un compte apparaissent ici automatiquement. Ajoute les autres comme invités.':'Players with an account show up here automatically. Add the others as guests.',
 '« ':'“','Réservé à l’admin du groupe.':'Group admin only.','🔮 Pronostics':'🔮 Predictions','Cotes calculées selon les notes des joueurs':'Odds based on player ratings',
 'Cotes calculées selon les notes des joueurs · fermés au coup d’envoi':'Odds based on player ratings · closed at kick-off','Qui es-tu ? Choisis ton prénom pour pronostiquer.':'Who are you? Pick your name to predict.',
@@ -580,7 +595,7 @@ const ENRX=[
 [/^Quitter « (.+) » sur ce téléphone \? Le groupe et ses données restent\. Il faudra le mot de passe pour revenir\.$/,'Leave “$1” on this phone? The group and its data stay. You’ll need the password to come back.'],
 [/^⚽ Rejoins le groupe « (.+) » pour noter nos matchs de foot à 5 :$/,'⚽ Join the group “$1” to rate our 5-a-side matches:'],
 [/^⭐ Homme du match : (.+)$/,'⭐ Man of the match: $1'],[/^· tu es admin$/,'· you are admin'],[/^\+(\d+) remp\.$/,'+$1 sub'],[/^(\d+) buts?$/,(m,n)=>`${n} goal${n>1?'s':''}`],
-[/^Code : (.+)$/,'Code: $1'],[/^« (.+) » ajouté comme invité\.$/,'“$1” added as a guest.'],[/^C’est (.+)$/,'It’s $1'],[/^Pointillés : moyenne (.+)$/,'Dashed: average $1'],
+[/^Code : (.+)$/,'Code: $1'],[/^(\d+)\/(\d+) paris gagnés$/,'$1/$2 bets won'],[/^Départ : (\d+) 🏆 Ballons d’or\. \+(\d+) par match joué\. Gagné = mise × cote\.$/,'Start: $1 🏆 golden balls. +$2 per match played. Win = stake × odds.'],[/^Nul · (\d+)$/,'Draw · $1'],[/^(.+) · (\d+)$/,(m,a,b)=>tr(a)+' · '+b],[/^« (.+) » ajouté comme invité\.$/,'“$1” added as a guest.'],[/^C’est (.+)$/,'It’s $1'],[/^Pointillés : moyenne (.+)$/,'Dashed: average $1'],
 [/^(\d+) match(s?) l’un contre l’autre\.$/,(m,n)=>`${n} match${n>1?'es':''} against each other.`],[/^Ensemble :$/,'Together:'],[/^\(V-N-D\) sur (\d+) match(s?)\.$/,(m,n)=>`(W-D-L) in ${n} match${n>1?'es':''}.`],
 [/^(\d+)\/(\d+) bons · (\d+) exacts?$/,(m,a,b,c)=>`${a}/${b} right · ${c} exact`],[/^Carte de (.+)$/,'Card of $1'],[/^Tu es ajouté au groupe comme (.+)\.$/,'You were added to the group as $1.'],[/^Compte créé\. Bienvenue (.+) !$/,'Account created. Welcome $1!'],[/^(.+) n’a pas joué ce match\.$/,'$1 didn’t play this match.'],[/^Ce téléphone est lié à (.+)\.$/,'This phone is linked to $1.'],
 [/^Tu es$/,'Are you'],[/^\? Ce téléphone sera lié à (.+) pour tous les votes\.$/,'? This phone will be linked to $1 for all votes.'],[/^Délier ce téléphone de (.+) \?$/,'Unlink this phone from $1?'],
@@ -844,36 +859,53 @@ function computeOdds(teams,subs){
 }
 function oddsOf(m){return m.odds||computeOdds(m.teams,m.subs)}
 const fmtOdd=n=>LANG==='en'?n.toFixed(2):n.toFixed(2).replace('.',',');
-function pronosOf(mid){return (S.pronos||[]).filter(x=>x.matchId===mid)}
+function pronosOf(mid){return (S.pronos||[]).filter(x=>x.matchId===mid&&x.pick&&x.stake>0)}
+const BO_START=100,BO_MATCH=10;
+const boFmt=n=>`${Math.round(n)} 🏆`;
 function outcome(a,b){return a>b?'A':b>a?'B':'N'}
-function pronoPts(m,pr){if(!m.score)return null;const o=outcome(m.score.A,m.score.B),po=outcome(pr.A,pr.B);if(o!==po)return 0;
-  const od=(m.odds||{})[o]||oddsOf(m)[o];return Math.round((od+(pr.A===m.score.A&&pr.B===m.score.B?2:0))*10)/10}
+function betResult(m,x){if(!m.score||(m.status!=='voting'&&m.status!=='closed'))return null;const o=outcome(m.score.A,m.score.B);
+  const od=(m.odds||oddsOf(m))[x.pick];return o===x.pick?Math.round(x.stake*(od-1)):-x.stake}
+function balanceOf(pid,exceptMid){
+  let b=BO_START;
+  for(const m of finished()){if(parts(m).includes(pid))b+=BO_MATCH}
+  for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0)||x.matchId===exceptMid)continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m)continue;
+    const r=betResult(m,x);b+=r==null?-x.stake:r}
+  return Math.max(0,b);
+}
 function pronoLocked(m){return m.status!=='open'||!!m.timer}
 function pronoCard(m){
   const od=oddsOf(m),mine=myPid(),lock=pronoLocked(m),list=pronosOf(m.id);
-  const oddsRow=`<div class="odds"><div><span class="dot A"></span>${esc(tname(m,'A'))}<b>${fmtOdd(od.A)}</b></div><div>Nul<b>${fmtOdd(od.N)}</b></div><div><span class="dot B"></span>${esc(tname(m,'B'))}<b>${fmtOdd(od.B)}</b></div></div>`;
+  const ex=mine&&list.find(x=>x.voter===mine);
+  let d=null;
+  if(!lock&&mine){d=S.prDraft&&S.prDraft.mid===m.id?S.prDraft:(S.prDraft={mid:m.id,pick:ex?ex.pick:'',stake:ex?ex.stake:10})}
+  const lab=k=>k==='N'?'Nul':esc(tname(m,k));
+  const tile=k=>`<button class="${d&&d.pick===k?'on':''}" ${d?`data-pk="${k}"`:'disabled'}>${k!=='N'?`<span class="dot ${k}"></span>`:''}${lab(k)}<b>${fmtOdd(od[k])}</b></button>`;
   let me='';
   if(!lock){
     if(!mine){const vis=S.players.filter(p=>(p.uid||p.guest)&&!S.claims[p.id]).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
-      me=`<p class="small muted" style="margin:10px 0 6px">Qui es-tu ? Choisis ton prénom pour pronostiquer.</p><div class="chips">${vis.map(p=>`<button data-act="pick" data-p="${p.id}">${esc(p.name)}</button>`).join('')}</div>`}
-    else{const ex=list.find(x=>x.voter===mine),d=S.prDraft&&S.prDraft.mid===m.id?S.prDraft:(S.prDraft={mid:m.id,A:ex?ex.A:0,B:ex?ex.B:0});
-      const st=t=>`<div class="stepper"><button data-pr="${t}-" aria-label="moins">−</button><b>${d[t]}</b><button data-pr="${t}+" aria-label="plus">+</button></div>`;
-      me=`<div class="prin">${st('A')}<span>–</span>${st('B')}</div><button class="btn" data-act="savePr">${ex?'Modifier mon prono':'Valider mon prono'}</button>`}
+      me=`<p class="small muted" style="margin:10px 0 6px">Qui es-tu ? Choisis ton prénom pour parier.</p><div class="chips">${vis.map(p=>`<button data-act="pick" data-p="${p.id}">${esc(p.name)}</button>`).join('')}</div>`}
+    else{const bal=balanceOf(mine,m.id);d.stake=Math.max(0,Math.min(d.stake,bal));
+      const chip=v=>`<button data-stk="${v}" class="${d.stake===(v==='all'?bal:v)?'on':''}">${v==='all'?'Tout':v}</button>`;
+      me=`<p class="small" style="margin:12px 0 6px">Solde : <b>${boFmt(bal)}</b></p>
+      <div class="stakerow"><div class="stepper"><button data-stk="-5" aria-label="moins">−</button><b>${d.stake}</b><button data-stk="+5" aria-label="plus">+</button></div><div class="chips">${[10,25,50].filter(v=>v<=bal).map(chip).join('')}${bal>0?chip('all'):''}</div></div>
+      ${d.pick&&d.stake>0?`<p class="small muted" style="margin:6px 0 8px">Gain possible : <b>+${Math.round(d.stake*(od[d.pick]-1))}</b> 🏆</p>`:'<p class="small muted" style="margin:6px 0 8px">Choisis un vainqueur et ta mise.</p>'}
+      <button class="btn" data-act="savePr" ${d.pick&&d.stake>0?'':'disabled'}>${ex?'Modifier mon pari':'Parier'}</button>`}
   }
-  const rows=list.slice().sort((a,b)=>pname(a.voter,m).localeCompare(pname(b.voter,m),'fr')).map(x=>{const pts=m.status==='closed'||m.status==='voting'?pronoPts(m,x):null;
-    return `<li><span class="nm">${esc(pname(x.voter,m))}</span><span class="ps">${x.A} – ${x.B}</span>${pts!=null?`<span class="pts ${pts>0?'ok':''}">${pts>0?'+'+fmtOdd(pts).replace(/[,.]00$/,''):'0'} pts</span>`:''}</li>`}).join('');
-  return `<div class="card prono"><h2>🔮 Pronostics</h2><div class="small muted" style="margin:-6px 0 8px">Cotes calculées selon les notes des joueurs${lock&&m.status==='open'?' · fermés au coup d’envoi':''}</div>${oddsRow}${me}
-  ${rows?`<ul class="prlist">${rows}</ul>`:(lock?'<p class="small muted" style="margin:10px 0 0">Aucun prono.</p>':'')}
-  <p class="small muted" style="margin:10px 0 0">Bon résultat = la cote en points. Score exact = +2.</p></div>`;
+  const rows=list.slice().sort((a,b)=>pname(a.voter,m).localeCompare(pname(b.voter,m),'fr')).map(x=>{const r=betResult(m,x);
+    return `<li><span class="nm">${esc(pname(x.voter,m))}</span><span class="ps">${x.pick==='N'?'Nul':esc(tname(m,x.pick))} · ${x.stake}</span>${r!=null?`<span class="pts ${r>0?'ok':''}">${r>0?'+':''}${r}</span>`:''}</li>`}).join('');
+  return `<div class="card prono"><h2>🏆 Paris</h2><div class="small muted" style="margin:-6px 0 8px">Cotes selon les notes des joueurs${lock&&m.status==='open'?' · fermés au coup d’envoi':''}</div><div class="odds">${tile('A')}${tile('N')}${tile('B')}</div>${me}
+  ${rows?`<ul class="prlist">${rows}</ul>`:(lock?'<p class="small muted" style="margin:10px 0 0">Aucun pari.</p>':'')}
+  <p class="small muted" style="margin:10px 0 0">Départ : ${BO_START} 🏆 Ballons d’or. +${BO_MATCH} par match joué. Gagné = mise × cote.</p></div>`;
 }
 async function savePr(){
-  const m=cur(),me=myPid(),d=S.prDraft;if(!m||!me||!d||pronoLocked(m))return;
-  try{await db.doc('pronos/'+m.id+'__'+me).set({matchId:m.id,voter:me,A:d.A,B:d.B,at:Date.now()});toast('Prono enregistré.')}catch(e){toast(errMsg(e))}
+  const m=cur(),me=myPid(),d=S.prDraft;if(!m||!me||!d||!d.pick||pronoLocked(m))return;
+  const bal=balanceOf(me,m.id),st=Math.min(d.stake,bal);if(!(st>0)){toast('Solde insuffisant.');return}
+  try{await db.doc('pronos/'+m.id+'__'+me).set({matchId:m.id,voter:me,pick:d.pick,stake:st,at:Date.now()});toast('Pari enregistré.')}catch(e){toast(errMsg(e))}
 }
 function pronoStats(){
-  const st={};for(const m of finished()){if(!m.score)continue;for(const x of pronosOf(m.id)){const s=st[x.voter]||(st[x.voter]={p:x.voter,n:0,ok:0,ex:0,pts:0,m});
-    const pts=pronoPts(m,x);s.n++;if(pts>0)s.ok++;if(x.A===m.score.A&&x.B===m.score.B)s.ex++;s.pts+=pts||0;s.m=m}}
-  return Object.values(st).sort((a,b)=>b.pts-a.pts||b.ok-a.ok);
+  const ids=new Set();(S.pronos||[]).forEach(x=>{if(x.pick)ids.add(x.voter)});
+  return [...ids].map(p=>{let n=0,ok=0,m=null;for(const x of S.pronos){if(x.voter!==p||!x.pick)continue;const mm=S.matches.find(y=>y.id===x.matchId);if(!mm)continue;m=mm;const r=betResult(mm,x);if(r==null)continue;n++;if(r>0)ok++}
+    return {p,n,ok,bal:balanceOf(p),m}}).filter(x=>x.m).sort((a,b)=>b.bal-a.bal);
 }
 function resOf(m,p){if(m.winner==='N')return 'N';return m.winner===teamOf(m,p)?'V':'D'}
 function computeStats(ms){
@@ -980,7 +1012,7 @@ function h2hCard(ms,everyone){
 }
 function prCard(){
   const l=pronoStats();if(!l.length)return '';
-  return `<div class="card"><h2>🔮 Pronostiqueurs</h2><ol class="rank">${l.slice(0,10).map((x,i)=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o.pts>x.pts).length}</span><span class="nm">${plink(x.p,x.m)}<small class="muted" style="display:block;font-size:12px">${x.ok}/${x.n} bons · ${x.ex} exact${x.ex>1?'s':''}</small></span><span class="avg">${fmtOdd(x.pts).replace(/[,.]00$/,'')} <small class="muted" style="font-size:14px">pts</small></span></li>`).join('')}</ol></div>`;
+  return `<div class="card"><h2>🏆 Ballons d’or</h2><ol class="rank">${l.slice(0,10).map(x=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o.bal>x.bal).length}</span><span class="nm">${plink(x.p,x.m)}<small class="muted" style="display:block;font-size:12px">${x.ok}/${x.n} paris gagnés</small></span><span class="avg">${Math.round(x.bal)} <small style="font-size:14px">🏆</small></span></li>`).join('')}</ol></div>`;
 }
 const plink=(p,m)=>`<button class="plink" data-pl="${p}">${esc(pname(p,m))}</button>`;
 function vPlayer(pid){
@@ -993,7 +1025,7 @@ function vPlayer(pid){
   const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
   const showAll=S.openCm.has('pl:'+pid);
   return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
-  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div><button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
+  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div><p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p><button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
   <div class="card"><h2>Badges</h2>${bd.length?`<div class="badges">${bd.map(([i,l])=>`<span class="badge"><i>${i}</i>${l}</span>`).join('')}</div>`:'<p class="small muted" style="margin:0">Aucun badge pour l’instant.</p>'}</div>
   <div class="card"><h2>Matchs</h2><ul class="mlog">${[...x.log].reverse().map(l=>`<li data-goto="${l.m.id}"><span class="res ${l.res}">${l.res}</span><span><span class="small muted">${esc(fmtDate(l.m.date))}</span><br>${l.m.score?`${l.m.score.A} – ${l.m.score.B}`:''} ${l.g?' ⚽×'+l.g:''}${l.pd?' 🅰️×'+l.pd:''}${l.motm?' ⭐':''}</span><span class="avg" style="font:700 22px/1 -apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,'Segoe UI',Roboto,sans-serif">${fmt1(l.note)}</span></li>`).join('')}</ul></div>
   <div class="card"><h2>Commentaires reçus</h2>${coms.length?`<ol class="rank">${(showAll?coms:coms.slice(0,5)).map(o=>`<li style="grid-template-columns:1fr auto"><span class="nm" style="font-style:italic">« ${esc(o.c)} »</span><span class="nv">${esc(fmtDate(o.m.date))}</span></li>`).join('')}</ol>${coms.length>5?`<button class="cmbtn" data-cm="pl:${pid}">${showAll?'Voir moins ▲':`Voir les ${coms.length} ▼`}</button>`:''}`:'<p class="small muted" style="margin:0">Aucun.</p>'}</div>`;
@@ -1302,7 +1334,9 @@ $v.addEventListener('click',e=>{
   const cb=e.target.closest('[data-cm]');if(cb){const k=cb.dataset.cm;S.openCm.has(k)?S.openCm.delete(k):S.openCm.add(k);render();return}
   const sk=e.target.closest('[data-sk]');if(sk){const c=sk.dataset.sk;S.statSort=S.statSort.k===c?{k:c,dir:-S.statSort.dir}:{k:c,dir:c==='name'?1:-1};render();return}
   const hi=e.target.closest('[data-hist]');if(hi){S.openHist=S.openHist===hi.dataset.hist?null:hi.dataset.hist;render();return}
-  const pr=e.target.closest('[data-pr]');if(pr&&S.prDraft){const [t,op]=[pr.dataset.pr[0],pr.dataset.pr[1]];S.prDraft[t]=Math.max(0,Math.min(30,S.prDraft[t]+(op==='+'?1:-1)));render();return}
+  const pk=e.target.closest('[data-pk]');if(pk&&S.prDraft){S.prDraft.pick=pk.dataset.pk;render();return}
+  const stk=e.target.closest('[data-stk]');if(stk&&S.prDraft){const m=cur(),bal=m?balanceOf(myPid(),m.id):0,v=stk.dataset.stk;
+    S.prDraft.stake=v==='all'?bal:/^[+-]/.test(v)?Math.max(0,Math.min(bal,S.prDraft.stake+parseInt(v,10))):Math.min(bal,parseInt(v,10));render();return}
   const h2=e.target.closest('[data-h2h]');if(h2){return}
   const b=e.target.closest('[data-act]');if(!b)return;
   const act=b.dataset.act;
@@ -1403,17 +1437,19 @@ function renderPill(){
 }
 function vWelcome(){
   const l=myGroups();
-  return `<div class="welcome"><h2>Ton groupe de foot</h2><p class="muted" style="margin-top:0">Chaque groupe a ses propres joueurs, matchs et stats.</p></div>
+  return `<div class="card welcome"><h2>Ton groupe de foot</h2><p class="muted" style="margin:0">Chaque groupe a ses propres joueurs, matchs et stats.</p></div>
   ${l.length?`<div class="card"><h2>Mes groupes</h2><div class="glist">${l.map(g=>`<button data-gsw="${esc(g.id)}"><span>${esc(g.name)}</span><small>${g.adm?'admin':''}</small></button>`).join('')}</div></div>`:''}
-  <button class="btn" data-act="gJoin">Rejoindre un groupe</button>
-  <button class="btn ghost" data-act="gCreate">Créer un groupe</button>${S.anon?'<button class="btn ghost" data-acc="1">👤 J’ai un compte : me connecter</button>':accountLine()}${installBtn()}${langSeg()}`;
+  <div class="card wbox"><h2>Groupe</h2><button class="btn" data-act="gJoin">Rejoindre un groupe</button>
+  <button class="btn ghost" data-act="gCreate">Créer un groupe</button></div>
+  <div class="card wbox"><h2>Compte</h2>${S.anon?'<p class="small muted" style="margin:-4px 0 10px">Optionnel. Garde tes groupes et tes stats sur tous tes téléphones.</p><button class="btn ghost" data-acc="new">Créer un compte</button><button class="btn ghost" data-acc="log">Se connecter</button>':accountLine()}</div>
+  <div class="card wbox">${installBtn()}${langSeg()}</div>`;
 }
 $v.addEventListener('click',e=>{const b=e.target.closest('[data-gsw]');if(b)switchGroup(b.dataset.gsw);const l=e.target.closest('[data-lang]');if(l)setLang(l.dataset.lang)});
 $m.addEventListener('click',e=>{const l=e.target.closest('[data-lang]');if(l)setLang(l.dataset.lang)});
 async function ensureMember(id,k,force){
   const e=myGroups().find(x=>x.id===id)||{};
   if(!force&&e.mem===S.uid&&e.k===k)return true;
-  await raw.doc('groups/'+id+'/members/'+S.uid).set({k,joinedAt:Date.now()},{merge:true});
+  await Promise.race([raw.doc('groups/'+id+'/members/'+S.uid).set({k,joinedAt:Date.now()},{merge:true}),new Promise((_,rej)=>setTimeout(()=>rej({code:'timeout'}),15000))]);
   upsertGroup({...e,id,k,mem:S.uid});return true;
 }
 let lostBusy=false;
@@ -1444,6 +1480,7 @@ function connect(g){
   if(!e||!e.k){kick(g.id,'Reconnecte-toi au groupe.');return}
   S.step='adhésion';S.slow=false;clearTimeout(connect.t);connect.t=setTimeout(()=>{if(!S.ready){S.slow=true;render()}},8000);
   ensureMember(g.id,e.k).then(()=>{S.step='lecture';if(S.group&&S.group.id===g.id)subscribe(g)}).catch(err=>{console.error(err);
+    if(err&&err.code==='timeout'){S.dbErr='délai dépassé (réseau ?)';S.noDb=true;render();return}
     if(err&&err.code==='permission-denied')kick(g.id,'Accès au groupe perdu (mot de passe changé ou groupe supprimé).');else onErr(err)});
 }
 function subscribe(g){
@@ -1672,7 +1709,7 @@ function deleteAccountForm(){
   });
 }
 async function doLogout(){try{await signOut(auth)}catch(_){}LS.del(GK);LS.del(GC);location.reload()}
-document.addEventListener('click',e=>{const a=e.target.closest('[data-acc]');if(a){e.preventDefault();accountMenu()}});
+document.addEventListener('click',e=>{const a=e.target.closest('[data-acc]');if(a){e.preventDefault();const v=a.dataset.acc;v==='new'?signupForm():v==='log'?loginForm():accountMenu()}});
 let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;schedule()});
 window.addEventListener('appinstalled',()=>{installEvt=null;toast('App installée.')});
@@ -1727,7 +1764,7 @@ document.getElementById('gpill').addEventListener('click',()=>{if(S.group)groupM
   if(!firebaseConfig.projectId||firebaseConfig.projectId.includes('REMPLACER')){S.noConf=true;render();return}
   let app;
   try{app=initializeApp(firebaseConfig);
-    try{fs=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})})}catch(_){fs=getFirestore(app)}
+    try{fs=initializeFirestore(app,{localCache:memoryLocalCache()})}catch(_){fs=getFirestore(app)}
   }catch(e){onErr(e);return}
   const wrapDoc=p=>({
     get:async()=>{const s=await getDoc(doc(fs,p));return {exists:s.exists(),data:()=>s.data()}},
