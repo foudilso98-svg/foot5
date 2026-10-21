@@ -369,7 +369,10 @@ function goalsCard(m){
 }
 function closeForm(m){
   const f=S.closeForm,gsc=goalScore(m);
-  if(f.sA===''&&f.sB===''&&goalsOf(m).length){f.sA=String(gsc.A);f.sB=String(gsc.B);if(!f.winner)f.winner=gsc.A>gsc.B?'A':gsc.B>gsc.A?'B':'N'}
+  const sig=goalsOf(m).map(g=>g.id).join(',');
+  if(f.sig!==sig||(!f.manual&&(f.sA!==String(gsc.A)||f.sB!==String(gsc.B)))){
+    f.sig=sig;f.manual=false;f.sA=String(gsc.A);f.sB=String(gsc.B);f.winner=gsc.A>gsc.B?'A':gsc.B>gsc.A?'B':'N';
+  }
   const w=k=>`<button data-w="${k}" class="${f.winner===k?'on':''}">${k==='N'?'Nul':esc(tname(m,k))}</button>`;
   return `<div class="card"><h2>Fin du match</h2>
   <div class="scorein"><label class="fld" style="margin:0">${esc(tname(m,'A'))}<input type="number" min="0" max="99" inputmode="numeric" data-f="sA" value="${esc(f.sA)}"></label><span>–</span><label class="fld" style="margin:0">${esc(tname(m,'B'))}<input type="number" min="0" max="99" inputmode="numeric" data-f="sB" value="${esc(f.sB)}"></label></div>
@@ -743,7 +746,7 @@ $v.addEventListener('input',e=>{
   if(t.id==='newName'){S.setup.newName=t.value;return}
   if(t.dataset.s){S.setup[t.dataset.s]=t.value;return}
   if(t.dataset.c&&S.draft){S.draft.comments[t.dataset.c]=t.value;return}
-  if(t.dataset.f){S.closeForm[t.dataset.f]=t.value;
+  if(t.dataset.f){S.closeForm[t.dataset.f]=t.value;S.closeForm.manual=true;
     const a=parseInt(S.closeForm.sA,10),b=parseInt(S.closeForm.sB,10);
     if(a>=0&&b>=0){S.closeForm.winner=a>b?'A':b>a?'B':'N';document.querySelectorAll('#wseg button').forEach(x=>x.classList.toggle('on',x.dataset.w===S.closeForm.winner))}}
 });
