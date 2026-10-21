@@ -80,6 +80,35 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .bgs::after{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 72%,transparent)}
 .empty{background:color-mix(in srgb,var(--surface) 85%,transparent);border-radius:10px}
 .cmbtn{display:block;background:none;border:0;padding:4px 0 0;color:var(--muted);font-size:13px;font-weight:600}
+.plink{background:none;border:0;padding:0;font:inherit;color:inherit;text-align:left;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chips button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 12px;font-weight:600;font-size:14px}
+.chips button.on{background:var(--pitch);border-color:var(--pitch);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.kpis div{background:var(--bg);border-radius:8px;padding:10px 6px;text-align:center}
+.kpis b{display:block;font:700 26px/1 "Barlow Condensed","Arial Narrow",sans-serif;font-variant-numeric:tabular-nums}
+.kpis span{font-size:12px;color:var(--muted)}
+.pname{font:700 40px/1 "Barlow Condensed","Arial Narrow",sans-serif;margin:6px 0 4px;overflow-wrap:anywhere}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:flex;align-items:center;gap:8px;background:var(--gold-bg);border:1px solid var(--gold);border-radius:10px;padding:8px 10px;font-weight:600;font-size:14px}
+.badge i{font-style:normal;font-size:22px}
+.mlog{list-style:none;margin:0;padding:0}
+.mlog li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+.mlog li:first-child{border-top:0}
+.res{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:6px;font:700 17px/1 "Barlow Condensed","Arial Narrow",sans-serif;color:#fff}
+.res.V{background:var(--pitch)}.res.N{background:#8A8F8C}.res.D{background:var(--danger)}
+.photo{width:100%;border-radius:10px;display:block;margin-bottom:10px}
+.upl{display:block;text-align:center;border:2px dashed var(--line);border-radius:10px;padding:14px;font-weight:600;cursor:pointer;margin-bottom:10px}
+.upl input{display:none}
+.range{position:relative;height:40px;margin:4px 6px 0}
+.rtrack{position:absolute;left:0;right:0;top:17px;height:6px;border-radius:3px;background:var(--line)}
+.rfill{position:absolute;top:0;bottom:0;background:var(--pitch);border-radius:3px}
+.range input{position:absolute;left:-14px;width:calc(100% + 28px);top:0;height:40px;margin:0;padding:0;border:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.range input::-webkit-slider-runnable-track{background:none;height:40px}
+.range input::-moz-range-track{background:none}
+.range input::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:28px;height:28px;margin-top:6px;border-radius:50%;background:#fff;border:3px solid var(--pitch);box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:grab}
+.range input::-moz-range-thumb{pointer-events:auto;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--pitch);cursor:grab}
+.rlab{display:flex;justify-content:space-between;font-weight:600;font-size:14px;margin:4px 0 12px}
 .board-empty{font:600 26px/1.1 "Barlow Condensed","Arial Narrow",sans-serif;margin-top:10px}
 
 main{padding:14px 12px calc(84px + env(safe-area-inset-bottom,0px))}
@@ -233,12 +262,12 @@ const firebaseConfig={
 };
 /* =========================================================================================================== */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,doc,collection,setDoc,updateDoc,deleteDoc,getDocs,onSnapshot,arrayUnion,arrayRemove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,doc,collection,setDoc,updateDoc,deleteDoc,getDocs,getDoc,onSnapshot,arrayUnion,arrayRemove} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const S={players:[],matches:[],votes:[],meta:null,config:{},noConf:false,got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,isOrg:false,
   tab:'match',voter:null,draft:null,loginErr:'',voteMsg:null,
   setup:{assign:{},date:'',nameA:'Équipe A',nameB:'Équipe B',newName:''},
-  goalForm:{team:'',scorer:'',assist:''},closeForm:{sA:'',sB:'',winner:''},statSort:{k:'wr',dir:-1},openCm:new Set(),openHist:null,pending:false};
+  goalForm:{team:'',scorer:'',assist:''},closeForm:{sA:'',sB:'',winner:''},statSort:{k:'wr',dir:-1},openCm:new Set(),playerView:null,sf:{mode:'all',n:5,from:'',to:'',players:[]},photos:{},openHist:null,pending:false};
 let db=null;
 const $v=document.getElementById('view'),$b=document.getElementById('board'),$m=document.getElementById('modal'),$t=document.getElementById('toast');
 
@@ -330,10 +359,10 @@ function orgBar(){return S.isOrg?'<p style="text-align:center;margin-top:18px"><
 function vMatchIn(){
   const m=cur();
   if(!m)return S.isOrg?vSetup():'<div class="empty"><p>Aucun match en cours.</p><p class="small">L’organisateur doit créer le match.</p></div>';
-  if(m.status==='closed')return resultCard(m)+motmCard(m)+rankCard(m)+(S.isOrg?'<button class="btn" data-act="newMatch">Nouveau match</button>':'');
+  if(m.status==='closed')return resultCard(m)+motmCard(m)+shareBtn(m)+photoBlock(m)+rankCard(m)+(S.isOrg?'<button class="btn" data-act="newMatch">Nouveau match</button>':'');
   if(m.status==='voting'){
     const voted=new Set(votesOf(m.id).map(v=>v.voter));
-    return resultCard(m)+`<div class="card"><h2>Votes</h2>${lineup(m,voted)}<p class="small muted" style="margin:10px 0 0">${voted.size}/${parts(m).length} ont voté. ✓ = vote reçu.</p></div>`
+    return resultCard(m)+shareBtn(m)+photoBlock(m)+`<div class="card"><h2>Votes</h2>${lineup(m,voted)}<p class="small muted" style="margin:10px 0 0">${voted.size}/${parts(m).length} ont voté. ✓ = vote reçu.</p></div>`
       +'<button class="btn" data-act="goVote">Noter les joueurs</button>'
       +'<button class="btn ghost" data-act="closeVotes">Clôturer les votes et publier</button>'
       +'<button class="btn ghost" data-act="reopen">Revenir au match (corriger buts ou score)</button>'
@@ -446,42 +475,140 @@ function motmCard(m){
 function rankCard(m){
   const vs=votesOf(m.id),mo=m.motm||[];
   const li=r=>{const cm=vs.map(v=>v.comments&&v.comments[r.p]).filter(Boolean);
-    return `<li class="${mo.includes(r.p)?'is-motm':''}"><span class="pos">${r.rank}</span><span class="dot ${teamOf(m,r.p)}"></span><span class="nm">${esc(pname(r.p,m))}${isSub(m,r.p)?' <small>remp.</small>':''}${cm.length?(()=>{const key=m.id+':'+r.p,op=S.openCm.has(key);return `<button class="cmbtn" data-cm="${key}" aria-expanded="${op}">💬 ${cm.length} commentaire${cm.length>1?'s':''} ${op?'▲':'▼'}</button>${op?`<span class="cm">${cm.map(c=>'« '+esc(c)+' »').join('<br>')}</span>`:''}`})():''}</span><span class="avg">${fmt1(r.avg)}</span><span class="nv">${r.count} vote${r.count>1?'s':''}</span></li>`};
+    return `<li class="${mo.includes(r.p)?'is-motm':''}"><span class="pos">${r.rank}</span><span class="dot ${teamOf(m,r.p)}"></span><span class="nm">${plink(r.p,m)}${isSub(m,r.p)?' <small>remp.</small>':''}${cm.length?(()=>{const key=m.id+':'+r.p,op=S.openCm.has(key);return `<button class="cmbtn" data-cm="${key}" aria-expanded="${op}">💬 ${cm.length} commentaire${cm.length>1?'s':''} ${op?'▲':'▼'}</button>${op?`<span class="cm">${cm.map(c=>'« '+esc(c)+' »').join('<br>')}</span>`:''}`})():''}</span><span class="avg">${fmt1(r.avg)}</span><span class="nv">${r.count} vote${r.count>1?'s':''}</span></li>`};
   return `<div class="card"><h2>Classement</h2><ol class="rank">${rows(m).map(li).join('')}</ol></div>`;
 }
 
 /* Stats */
-function computeStats(){
-  const st={};
-  for(const m of S.matches.filter(x=>x.status==='voting'||x.status==='closed')){
+function finished(){return S.matches.filter(x=>x.status==='voting'||x.status==='closed').sort((a,b)=>(a.date||'').localeCompare(b.date||'')||(a.createdAt||0)-(b.createdAt||0))}
+function rangeIdx(fin){const f=S.sf,n=fin.length;
+  let fi=f.from?fin.findIndex(m=>m.date>=f.from):0;if(fi<0)fi=n-1;
+  let ti=n-1;if(f.to){ti=-1;fin.forEach((m,i)=>{if(m.date<=f.to)ti=i})}if(ti<fi)ti=fi;
+  return [fi,ti]}
+function filteredMatches(){
+  let ms=finished();const f=S.sf;
+  if(f.mode==='last')ms=ms.slice(-f.n);
+  else if(f.mode==='dates'&&ms.length>1){const [fi,ti]=rangeIdx(ms);ms=ms.slice(fi,ti+1)}
+  return ms;
+}
+function resOf(m,p){if(m.winner==='N')return 'N';return m.winner===teamOf(m,p)?'V':'D'}
+function computeStats(ms){
+  ms=ms||finished();const st={};
+  for(const m of ms){
     for(const p of parts(m)){
-      const s=st[p]||(st[p]={p,mj:0,v:0,n:0,d:0,sum:0,cnt:0,motm:0,g:0,pd:0,last:m});
-      s.mj++;const t=teamOf(m,p);
-      if(m.winner==='N')s.n++;else if(m.winner===t)s.v++;else s.d++;
+      const s=st[p]||(st[p]={p,mj:0,v:0,n:0,d:0,sum:0,cnt:0,motm:0,g:0,pd:0,last:m,log:[]});
+      s.mj++;s.last=m;const rr=resOf(m,p);s[rr==='V'?'v':rr==='N'?'n':'d']++;
       const r=(m.results||{})[p];if(r){s.sum+=r.sum;s.cnt+=r.count}
-      if((m.motm||[]).includes(p))s.motm++;
+      const mo=(m.motm||[]).includes(p);if(mo)s.motm++;
+      const g=goalsOf(m).filter(x=>x.scorer===p).length,pd=goalsOf(m).filter(x=>x.assist===p).length;
+      s.g+=g;s.pd+=pd;
+      s.log.push({m,res:rr,note:r&&r.count?r.sum/r.count:null,g,pd,motm:mo});
     }
-    for(const g of goalsOf(m)){if(st[g.scorer])st[g.scorer].g++;if(g.assist&&st[g.assist])st[g.assist].pd++}
   }
-  return Object.values(st).map(s=>({...s,wr:s.mj?s.v/s.mj*100:0,avg:s.cnt?s.sum/s.cnt:null}));
+  return Object.values(st).map(s=>{
+    let cur=0,ct='';for(let i=s.log.length-1;i>=0;i--){if(!ct)ct=s.log[i].res;if(s.log[i].res===ct)cur++;else break}
+    let best=0,run=0;s.log.forEach(l=>{run=l.res==='V'?run+1:0;best=Math.max(best,run)});
+    return {...s,wr:s.mj?s.v/s.mj*100:0,avg:s.cnt?s.sum/s.cnt:null,streak:{t:ct,n:cur},bestWin:best,hat:s.log.filter(l=>l.g>=3).length};
+  });
+}
+function form(x){return x.streak.t==='V'&&x.streak.n>=3?' 🔥':x.streak.t==='D'&&x.streak.n>=3?' 🥶':''}
+function badgesOf(x,all){
+  const b=[];
+  if(x.hat)b.push(['🎩','Hat-trick'+(x.hat>1?' ×'+x.hat:'')]);
+  if(x.g>=10)b.push(['⚽','10 buts']);
+  if(x.pd>=10)b.push(['🅰️','10 passes D']);
+  if(x.mj>=10)b.push(['🏟️','10 matchs']);
+  if(x.mj>=25)b.push(['🎖️','25 matchs']);
+  if(x.motm>=3)b.push(['👑','3 MOTM']);
+  if(x.bestWin>=5)b.push(['💥','5 victoires d’affilée']);else if(x.bestWin>=3)b.push(['🔥','3 victoires d’affilée']);
+  const el=all.filter(y=>y.mj>=5);
+  if(el.length>=3&&x.mj>=5){const min=Math.min(...el.map(y=>y.wr));if(x.wr===min&&x.wr<50)b.push(['🐈‍⬛','Chat noir']);}
+  return b;
+}
+const plink=(p,m)=>`<button class="plink" data-pl="${p}">${esc(pname(p,m))}</button>`;
+function vPlayer(pid){
+  const all=computeStats(),x=all.find(y=>y.p===pid);
+  const back='<p><button class="link" data-act="plBack">← Retour aux stats</button></p>';
+  if(!x)return back+`<div class="empty"><p>${esc(pname(pid))} n’a pas encore joué.</p></div>`;
+  const k=(v,l)=>`<div><b>${v}</b><span>${l}</span></div>`;
+  const st=x.streak.n?`Série en cours : ${x.streak.n} ${x.streak.t==='V'?'victoire':x.streak.t==='N'?'nul':'défaite'}${x.streak.n>1?'s':''}`:'';
+  const bd=badgesOf(x,all);
+  const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
+  const showAll=S.openCm.has('pl:'+pid);
+  return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
+  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div></div>
+  <div class="card"><h2>Badges</h2>${bd.length?`<div class="badges">${bd.map(([i,l])=>`<span class="badge"><i>${i}</i>${l}</span>`).join('')}</div>`:'<p class="small muted" style="margin:0">Aucun badge pour l’instant.</p>'}</div>
+  <div class="card"><h2>Matchs</h2><ul class="mlog">${[...x.log].reverse().map(l=>`<li data-goto="${l.m.id}"><span class="res ${l.res}">${l.res}</span><span><span class="small muted">${esc(fmtDate(l.m.date))}</span><br>${l.m.score?`${l.m.score.A} – ${l.m.score.B}`:''} ${l.g?' ⚽×'+l.g:''}${l.pd?' 🅰️×'+l.pd:''}${l.motm?' ⭐':''}</span><span class="avg" style="font:700 22px/1 'Barlow Condensed',sans-serif">${fmt1(l.note)}</span></li>`).join('')}</ul></div>
+  <div class="card"><h2>Commentaires reçus</h2>${coms.length?`<ol class="rank">${(showAll?coms:coms.slice(0,5)).map(o=>`<li style="grid-template-columns:1fr auto"><span class="nm" style="font-style:italic">« ${esc(o.c)} »</span><span class="nv">${esc(fmtDate(o.m.date))}</span></li>`).join('')}</ol>${coms.length>5?`<button class="cmbtn" data-cm="pl:${pid}">${showAll?'Voir moins ▲':`Voir les ${coms.length} ▼`}</button>`:''}`:'<p class="small muted" style="margin:0">Aucun.</p>'}</div>`;
 }
 function vStats(){
-  const all=computeStats();
+  if(S.playerView)return vPlayer(S.playerView);
   const reset='<button class="btn danger" data-act="reset" style="margin-top:24px">🔒 Réinitialisation complète</button>';
-  if(!all.length)return '<div class="empty"><p>Aucun match clôturé.</p></div>'+reset;
+  const fin=finished();
+  if(!fin.length)return '<div class="empty"><p>Aucun match terminé.</p></div>'+reset;
+  const f=S.sf,ms=filteredMatches();
+  let all=computeStats(ms);
+  const everyone=computeStats(fin).sort((a,b)=>pname(a.p,a.last).localeCompare(pname(b.p,b.last),'fr'));
+  if(f.players.length)all=all.filter(x=>f.players.includes(x.p));
+  const mb=(v,l)=>`<button data-sfm="${v}" class="${f.mode===v?'on':''}">${l}</button>`;
+  let sub='';
+  if(f.mode==='last')sub=`<div class="chips">${[3,5,10,20].map(n=>`<button data-sfn="${n}" class="${f.n===n?'on':''}">${n} derniers</button>`).join('')}</div>`;
+  if(f.mode==='dates'){
+    const n=fin.length;
+    if(n<2)sub='<p class="small muted">Il faut au moins 2 matchs.</p>';
+    else{const [fi,ti]=rangeIdx(fin);const pc=i=>i/(n-1)*100;
+      sub=`<div class="range"><div class="rtrack"><div class="rfill" id="rgFill" style="left:${pc(fi)}%;right:${100-pc(ti)}%"></div></div>
+      <input type="range" min="0" max="${n-1}" step="1" value="${fi}" data-rg="from" aria-label="Premier match">
+      <input type="range" min="0" max="${n-1}" step="1" value="${ti}" data-rg="to" aria-label="Dernier match"></div>
+      <div class="rlab"><span id="rgFrom">${esc(fmtDate(fin[fi].date))}</span><span id="rgTo">${esc(fmtDate(fin[ti].date))}</span></div>`}
+  }
+  const filt=`<div class="card"><h2>Filtres</h2><div class="sorts">${mb('all','Tout')}${mb('last','Derniers')}${mb('dates','Dates')}</div>${sub}
+  <div class="small muted" style="margin-bottom:6px">Joueurs</div><div class="chips"><button data-sfp="" class="${f.players.length?'':'on'}">Tous</button>${everyone.map(x=>`<button data-sfp="${x.p}" class="${f.players.includes(x.p)?'on':''}">${esc(pname(x.p,x.last))}</button>`).join('')}</div>
+  <p class="small muted" style="margin:0 0 ${f.mode!=='all'||f.players.length?'10px':'0'}">${ms.length} match${ms.length>1?'s':''} pris en compte.</p>
+  ${f.mode!=='all'||f.players.length?'<button class="btn ghost" data-act="sfReset" style="margin:0">↺ Réinitialiser les filtres</button>':''}</div>`;
+  if(!all.length)return filt+'<div class="empty"><p>Aucune donnée pour ces filtres.</p></div>'+reset;
   const {k,dir}=S.statSort;
   const cols=[['name','Joueur'],['mj','MJ'],['v','V'],['n','N'],['d','D'],['wr','%V'],['avg','Moy.'],['motm','MOTM'],['g','Buts'],['pd','PD']];
   const val=(x,c)=>c==='name'?pname(x.p,x.last):(x[c]??-1);
   all.sort((a,b)=>{const A=val(a,k),B=val(b,k);const c=k==='name'?String(A).localeCompare(String(B),'fr'):A-B;return c*dir||b.mj-a.mj||String(val(a,'name')).localeCompare(String(val(b,'name')),'fr')});
   const top=(key,title,unit)=>{const l=all.filter(x=>x[key]>0).sort((a,b)=>b[key]-a[key]||(key==='g'?b.pd-a.pd:b.g-a.g)).slice(0,5);
-    return `<div class="card"><h2>${title}</h2>${l.length?`<ol class="rank">${l.map(x=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o[key]>x[key]).length}</span><span class="nm">${esc(pname(x.p,x.last))}</span><span class="avg">${x[key]} <small class="muted" style="font-size:14px">${unit}</small></span></li>`).join('')}</ol>`:'<p class="small muted" style="margin:0">Aucun pour l’instant.</p>'}</div>`};
+    return `<div class="card"><h2>${title}</h2>${l.length?`<ol class="rank">${l.map(x=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o[key]>x[key]).length}</span><span class="nm">${plink(x.p,x.last)}</span><span class="avg">${x[key]} <small class="muted" style="font-size:14px">${unit}</small></span></li>`).join('')}</ol>`:'<p class="small muted" style="margin:0">Aucun pour l’instant.</p>'}</div>`};
   const th=([c,l])=>`<th><button class="sth ${k===c?'on':''}" data-sk="${c}" aria-sort="${k===c?(dir<0?'descending':'ascending'):'none'}">${l}<span class="ar">${k===c?(dir<0?'▼':'▲'):'↕'}</span></button></th>`;
   const td=(x,c,v)=>`<td class="${k===c?'hl':''}">${v}</td>`;
-  return top('g','⚽ Meilleurs buteurs','buts')+top('pd','🅰️ Meilleurs passeurs','PD')+`
-  <div class="card"><h2>Classement</h2><p class="small muted" style="margin:-4px 0 8px">Touche une colonne pour trier. Retouche pour inverser.</p><div class="tbl"><table><thead><tr>${cols.map(th).join('')}</tr></thead><tbody>
-  ${all.map(x=>`<tr>${td(x,'name',esc(pname(x.p,x.last)))}${td(x,'mj',x.mj)}${td(x,'v',x.v)}${td(x,'n',x.n)}${td(x,'d',x.d)}${td(x,'wr',Math.round(x.wr))}${td(x,'avg',fmt1(x.avg))}${td(x,'motm',x.motm)}${td(x,'g',x.g)}${td(x,'pd',x.pd)}</tr>`).join('')}
+  return filt+top('g','⚽ Meilleurs buteurs','buts')+top('pd','🅰️ Meilleurs passeurs','PD')+`
+  <div class="card"><h2>Classement</h2><p class="small muted" style="margin:-4px 0 8px">Touche une colonne pour trier, un nom pour sa fiche. 🔥 3 victoires de suite, 🥶 3 défaites.</p><div class="tbl"><table><thead><tr>${cols.map(th).join('')}</tr></thead><tbody>
+  ${all.map(x=>`<tr>${td(x,'name',plink(x.p,x.last)+form(x))}${td(x,'mj',x.mj)}${td(x,'v',x.v)}${td(x,'n',x.n)}${td(x,'d',x.d)}${td(x,'wr',Math.round(x.wr))}${td(x,'avg',fmt1(x.avg))}${td(x,'motm',x.motm)}${td(x,'g',x.g)}${td(x,'pd',x.pd)}</tr>`).join('')}
   </tbody></table></div><p class="small muted" style="margin:10px 0 0">MJ matchs joués, V victoires, N nuls, D défaites, PD passes décisives.</p></div>${reset}`;
 }
+
+/* Photo & partage */
+function photoBlock(m){
+  const ph=S.photos[m.id];
+  if(ph===undefined){S.photos[m.id]='loading';db.doc('meta/photo_'+m.id).get().then(d=>{S.photos[m.id]=d.exists?d.data().data:null;schedule()}).catch(()=>{S.photos[m.id]=null;schedule()})}
+  const img=ph&&ph!=='loading'?`<img class="photo" src="${ph}" alt="Photo du match">`:'';
+  return img+`<label class="upl">📷 ${img?'Changer la photo':'Ajouter une photo du match'}<input type="file" accept="image/*" data-photo="${m.id}"></label>`;
+}
+async function uploadPhoto(mid,file){
+  if(!file)return;toast('Envoi de la photo…');
+  try{
+    const url=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+    let w=img.width,h=img.height,max=1100;if(w>max||h>max){const r=Math.min(max/w,max/h);w=Math.round(w*r);h=Math.round(h*r)}
+    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+    let q=.72,data=c.toDataURL('image/jpeg',q);while(data.length>800000&&q>.3){q-=.1;data=c.toDataURL('image/jpeg',q)}
+    await db.doc('meta/photo_'+mid).set({data,at:Date.now()});
+    S.photos[mid]=data;render();toast('Photo ajoutée.');
+  }catch(e){toast('Échec de l’envoi de la photo.')}
+}
+function shareMatch(m){
+  const gl=goalsOf(m).map(g=>`${g.min?g.min+'’ ':''}${g.scorer==='csc'?'CSC':pname(g.scorer,m)}${g.assist?' ('+pname(g.assist,m)+')':''} [${tname(m,g.team)}]`);
+  const mo=(m.motm||[]).map(p=>pname(p,m)).join(' & ');
+  const r=mo?(m.results||{})[m.motm[0]]:null;
+  const t=`⚽ Match du ${fmtDate(m.date)}\n${tname(m,'A')} ${m.score.A} – ${m.score.B} ${tname(m,'B')}\n${gl.length?'\nButs :\n'+gl.join('\n')+'\n':''}${mo?`\n⭐ Homme du match : ${mo} (${fmt1(r.sum/r.count)}/10)\n`:m.status==='voting'?'\n🗳️ Votez sur le site !\n':''}\n${location.href.split('#')[0]}`;
+  if(navigator.share){navigator.share({text:t}).catch(()=>{});return}
+  window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');
+}
+const shareBtn=m=>`<button class="btn" data-act="share" data-m="${m.id}" style="background:#25D366">Partager sur WhatsApp</button>`;
 
 /* Historique */
 function vHist(){
@@ -495,7 +622,7 @@ function vHist(){
     <div class="ps">A : ${names('A')}<br>B : ${names('B')}</div>
     ${goalsOf(m).length?`<div class="ps" style="margin-top:4px">Buts : ${goalsOf(m).map(g=>g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))).join(', ')}</div>`:''}
     <div class="m">MOTM : <b>${(m.motm||[]).length?m.motm.map(p=>esc(pname(p,m))).join(' & '):'–'}</b></div></button>
-    ${open?`<div class="hdetail">${motmCard(m)}${rankCard(m)}<button class="btn danger" data-act="delMatch" data-m="${m.id}">🔒 Supprimer ce match</button></div>`:''}`;
+    ${open?`<div class="hdetail">${motmCard(m)}${shareBtn(m)}${photoBlock(m)}${rankCard(m)}<button class="btn danger" data-act="delMatch" data-m="${m.id}">🔒 Supprimer ce match</button></div>`:''}`;
   }).join('');
 }
 
@@ -659,6 +786,7 @@ async function deleteMatch(id){
   try{
     for(const v of votesOf(id))await db.doc('votes/'+v.id).delete();
     await db.doc('matches/'+id).delete();
+    try{await db.doc('meta/photo_'+id).delete()}catch(_){}
     if(S.meta&&S.meta.currentMatchId===id)await db.doc('meta/state').set({currentMatchId:null});
     S.openHist=null;render();toast('Match supprimé.');
   }catch(e){toast(errMsg(e))}
@@ -686,6 +814,7 @@ function orgLogin(){
 }
 async function resetAll(){
   try{
+    for(const m of S.matches){try{await db.doc('meta/photo_'+m.id).delete()}catch(_){}}
     for(const col of ['votes','matches','players']){const s=await db.collection(col).get();for(const d of s.docs)await db.doc(col+'/'+d.id).delete()}
     await db.doc('meta/state').set({currentMatchId:null});
     S.voter=null;S.draft=null;S.setup.assign={};S.openHist=null;S.tab='match';render();toast('Données effacées.');
@@ -693,7 +822,7 @@ async function resetAll(){
 }
 
 /* ---------- Événements ---------- */
-document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;S.tab=b.dataset.tab;render();window.scrollTo(0,0)});
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;S.tab=b.dataset.tab;S.playerView=null;render();window.scrollTo(0,0)});
 $v.addEventListener('click',e=>{
   const r=e.target.closest('.rates button');
   if(r){const box=r.parentElement,p=box.dataset.p,n=+r.dataset.r;S.draft.ratings[p]=n;
@@ -711,6 +840,11 @@ $v.addEventListener('click',e=>{
   if(gt){const t=gt.dataset.gt;S.goalForm={team:S.goalForm.team===t?'':t,scorer:'',assist:''};render();return}
   const gc=e.target.closest('[data-gc]');
   if(gc){const k=gc.dataset.gc,v=gc.dataset.v;S.goalForm[k]=v;if(k==='scorer'&&S.goalForm.assist===v)S.goalForm.assist='';render();return}
+  const pl=e.target.closest('[data-pl]');if(pl){S.playerView=pl.dataset.pl;S.tab='stats';render();window.scrollTo(0,0);return}
+  const go=e.target.closest('[data-goto]');if(go){S.tab='hist';S.openHist=go.dataset.goto;S.playerView=null;render();return}
+  const sm=e.target.closest('[data-sfm]');if(sm){S.sf.mode=sm.dataset.sfm;render();return}
+  const sn=e.target.closest('[data-sfn]');if(sn){S.sf.n=+sn.dataset.sfn;render();return}
+  const sp=e.target.closest('[data-sfp]');if(sp){const id=sp.dataset.sfp,l=S.sf.players;if(!id)S.sf.players=[];else S.sf.players=l.includes(id)?l.filter(x=>x!==id):[...l,id];render();return}
   const cb=e.target.closest('[data-cm]');if(cb){const k=cb.dataset.cm;S.openCm.has(k)?S.openCm.delete(k):S.openCm.add(k);render();return}
   const sk=e.target.closest('[data-sk]');if(sk){const c=sk.dataset.sk;S.statSort=S.statSort.k===c?{k:c,dir:-S.statSort.dir}:{k:c,dir:c==='name'?1:-1};render();return}
   const hi=e.target.closest('[data-hist]');if(hi){S.openHist=S.openHist===hi.dataset.hist?null:hi.dataset.hist;render();return}
@@ -725,6 +859,9 @@ $v.addEventListener('click',e=>{
     const m=cur();confirmBox(`Terminer le match sur le score ${esc(tname(m,'A'))} ${f.sA} – ${f.sB} ${esc(tname(m,'B'))} ?`,'Terminer et ouvrir les votes',closeMatch)}
   else if(act==='lastTeams')lastTeams();
   else if(act==='balance')balance();
+  else if(act==='sfReset'){S.sf={mode:'all',n:5,from:'',to:'',players:[]};render()}
+  else if(act==='plBack'){S.playerView=null;render()}
+  else if(act==='share'){const m=S.matches.find(x=>x.id===b.dataset.m);if(m)shareMatch(m)}
   else if(act==='tStart')timer('start');
   else if(act==='tPause')timer('pause');
   else if(act==='tReset')confirmBox('Remettre le chrono à zéro ?','Remise à zéro',()=>timer('reset'));
@@ -743,8 +880,17 @@ $v.addEventListener('click',e=>{
     adminGate(()=>confirmBox(`Supprimer le match du ${esc(fmtDate(m?m.date:''))} ? Ses buts, votes et stats seront effacés.`,'Supprimer',()=>deleteMatch(id)))}
   else if(act==='adminOut'){LS.del('foot5_org');render();toast('Mode admin déconnecté.')}
 });
+function rgMove(t){
+  const fin=finished(),n=fin.length,ins=$v.querySelectorAll('[data-rg]');if(n<2||ins.length<2)return;
+  let a=+ins[0].value,b=+ins[1].value;
+  if(a>b){if(t.dataset.rg==='from'){a=b;ins[0].value=a}else{b=a;ins[1].value=b}}
+  S.sf.from=fin[a].date;S.sf.to=fin[b].date;
+  const fl=document.getElementById('rgFill');if(fl){fl.style.left=a/(n-1)*100+'%';fl.style.right=(100-b/(n-1)*100)+'%'}
+  document.getElementById('rgFrom').textContent=fmtDate(fin[a].date);document.getElementById('rgTo').textContent=fmtDate(fin[b].date);
+}
 $v.addEventListener('input',e=>{
   const t=e.target;
+  if(t.dataset.rg){rgMove(t);return}
   if(t.id==='newName'){S.setup.newName=t.value;return}
   if(t.dataset.s){S.setup[t.dataset.s]=t.value;return}
   if(t.dataset.c&&S.draft){S.draft.comments[t.dataset.c]=t.value;return}
@@ -753,7 +899,10 @@ $v.addEventListener('input',e=>{
     if(a>=0&&b>=0){S.closeForm.winner=a>b?'A':b>a?'B':'N';document.querySelectorAll('#wseg button').forEach(x=>x.classList.toggle('on',x.dataset.w===S.closeForm.winner))}}
 });
 $v.addEventListener('change',e=>{
-  const t=e.target;if(!t.dataset.gf)return;
+  const t=e.target;
+  if(t.dataset.photo){uploadPhoto(t.dataset.photo,t.files&&t.files[0]);t.value='';return}
+  if(t.dataset.rg){rgMove(t);t.blur();render();return}
+  if(!t.dataset.gf)return;
   S.goalForm[t.dataset.gf]=t.value;
   if(t.dataset.gf==='scorer'){if(S.goalForm.assist===t.value)S.goalForm.assist='';t.blur();render()}
 });
@@ -772,6 +921,7 @@ function onErr(e){console.error(e);S.noDb=true;render()}
     try{fs=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})})}catch(_){fs=getFirestore(app)}
   }catch(e){onErr(e);return}
   const wrapDoc=p=>({
+    get:async()=>{const s=await getDoc(doc(fs,p));return {exists:s.exists(),data:()=>s.data()}},
     set:x=>setDoc(doc(fs,p),x),update:x=>updateDoc(doc(fs,p),x),delete:()=>deleteDoc(doc(fs,p)),
     onSnapshot:(n,e)=>onSnapshot(doc(fs,p),s=>n({id:s.id,exists:s.exists(),data:()=>s.data()}),e)});
   db={doc:wrapDoc,collection:c=>({doc:id=>wrapDoc(c+'/'+id),get:()=>getDocs(collection(fs,c)),onSnapshot:(n,e)=>onSnapshot(collection(fs,c),n,e)})};
