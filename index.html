@@ -359,6 +359,14 @@ body.nogroup .tabs{display:none}
 .shopit{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 .shopit>div{flex:1}.shopit small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
 .shopit .btn.inline{width:auto;margin:0;white-space:nowrap}
+.mlist{display:flex;flex-direction:column}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:16px}
+.mrow>span{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.mtag{font-size:11px;padding:2px 7px;border-radius:999px;background:var(--fill,rgba(120,120,128,.16));color:var(--muted)}
+.mtag.gst{background:rgba(255,149,0,.15);color:#C66A00}.mtag.adm,.mtag.own{background:rgba(255,204,0,.2);color:#9A6B00}
+.mbtn{border:0;border-radius:999px;padding:7px 14px;font-weight:600;font-size:14px;background:var(--fill,rgba(120,120,128,.16));color:var(--accent,#007AFF);white-space:nowrap}
+.mbtn.danger{color:#FF3B30;background:rgba(255,59,48,.12)}
+.mh{font-size:15px;margin:16px 0 4px;color:var(--muted)}
 .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
@@ -514,6 +522,13 @@ const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k
 let LANG=(()=>{try{const l=localStorage.getItem('foot5_lang');if(l==='fr'||l==='en')return l}catch(e){}return /^fr/i.test(navigator.language||'fr')?'fr':'en'})();
 document.documentElement.lang=LANG;
 const EN={
+'👥 Gérer les membres':'👥 Manage members','👥 Membres':'👥 Members','compte':'account','invité':'guest','👑 créateur':'👑 creator','admin':'admin',
+'Exclure':'Remove','Retirer':'Remove from list','Réintégrer':'Restore','Spectateurs sans compte':'Spectators without account','Spectateur':'Spectator','Spectateur exclu':'Removed spectator',
+'Exclus et retirés':'Removed','Un membre exclu ne peut plus rejoindre le groupe, même avec le lien ou le mot de passe. Ses stats restent.':'A removed member can’t rejoin the group, even with the link or password. Their stats stay.',
+'Exclure ce spectateur du groupe ?':'Remove this spectator from the group?','Membre exclu.':'Member removed.','Joueur retiré.':'Player removed from list.','Réintégré.':'Restored.',
+'Impossible d’exclure cette personne.':'You can’t remove this person.',
+'Accès au groupe perdu (mot de passe changé, exclusion ou groupe supprimé).':'Lost access to the group (password changed, removed or group deleted).',
+'Il ne pourra plus voir ni rejoindre le groupe. Ses stats restent.':'They won’t be able to see or rejoin the group. Their stats stay.',
 '🛒 Boutique':'🛒 Shop','Solde :':'Balance:','✨ Nom en or':'✨ Gold name','🥸 Moustache':'🥸 Moustache','Fermer':'Close','← Retour':'← Back',
 'Ton nom en or partout pendant 7 jours.':'Your name in gold everywhere for 7 days.',
 'Sur le nom d’un pote pendant 7 jours. Tout le monde la verra.':'On a friend’s name for 7 days. Everyone will see it.',
@@ -613,6 +628,7 @@ const EN={
 'en haut du script. Voir README.':'at the top of the script. See README.','Nom équipe A':'Team A name','Nom équipe B':'Team B name','A :':'A:','B :':'B:'
 };
 const ENRX=[
+[/^Spectateur · (.+)$/,'Spectator · $1'],[/^Exclure $/,'Remove '],[/^ du groupe \? Il ne pourra plus voir ni rejoindre le groupe\. Ses stats restent\.$/,' from the group? They won’t be able to see or rejoin. Their stats stay.'],
 [/^ · encore (\d+) j$/,' · $1 days left'],[/^✨ Nom en or · encore (\d+) j$/,'✨ Gold name · $1 days left'],[/^ Actif encore (\d+) j\.$/,' Active for $1 more days.'],
 [/^Ton nom en or partout pendant 7 jours\. Actif encore (\d+) j\.$/,'Your name in gold everywhere for 7 days. Active for $1 more days.'],
 [/^🥸 Moustache · (\d+) 🏆$/,'🥸 Moustache · $1 🏆'],
@@ -852,9 +868,9 @@ function vSetup(){
   const a=S.setup.assign,ids=Object.keys(a).filter(p=>S.players.some(x=>x.id===p));
   const c=k=>ids.filter(p=>a[p]===k).length;
   const nA=c('A'),nB=c('B'),ok=nA===5&&nB===5;
-  const pool=S.players.filter(p=>p.uid||p.guest||a[p.id]).sort((x,y)=>(!!y.uid-!!x.uid)||x.name.localeCompare(y.name,'fr'));
+  const pool=S.players.filter(p=>((p.uid||p.guest)&&!p.out)||a[p.id]).sort((x,y)=>(!!y.uid-!!x.uid)||x.name.localeCompare(y.name,'fr'));
   const lab={A:'A',B:'B',sA:'Rem. A',sB:'Rem. B'};
-  const rows=pool.map(p=>`<div class="prow"><span class="pn">${esc(p.name)}${p.uid?'':' <small class="gtag">invité</small>'}</span><div class="seg4">${['A','B','sA','sB'].map(k=>`<button data-assign="${k}" data-p="${p.id}" class="${a[p.id]===k?'on '+k:''}" aria-pressed="${a[p.id]===k}">${lab[k]}</button>`).join('')}</div>${p.uid?'<span class="xsp"></span>':`<button class="x" data-act="delPlayer" data-p="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button>`}</div>`).join('');
+  const rows=pool.map(p=>`<div class="prow"><span class="pn">${esc(p.name)}${p.uid?'':' <small class="gtag">invité</small>'}</span><div class="seg4">${['A','B','sA','sB'].map(k=>`<button data-assign="${k}" data-p="${p.id}" class="${a[p.id]===k?'on '+k:''}" aria-pressed="${a[p.id]===k}">${lab[k]}</button>`).join('')}</div>${p.uid&&!isGAdmin()?'<span class="xsp"></span>':p.uid?`<button class="x" data-act="kickP" data-p="${p.id}" aria-label="Exclure">×</button>`:`<button class="x" data-act="delPlayer" data-p="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button>`}</div>`).join('');
   return `<div class="card"><h2>Nouveau match</h2>
   <label class="fld">Date<input type="date" data-s="date" value="${esc(S.setup.date)}"></label>
   <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" placeholder="Équipe A" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" placeholder="Équipe B" value="${esc(S.setup.nameB)}"></label></div></div>
@@ -953,7 +969,7 @@ function goldify(root){
 }
 function shopModal(target){
   const me=myPid();if(!me){if(S.anon)needAccount();return}
-  const bal=balanceOf(me),vis=S.players.filter(p=>(p.uid||p.guest)&&p.id!==me).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const bal=balanceOf(me),vis=S.players.filter(p=>(p.uid||p.guest)&&!p.out&&p.id!==me).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
   const g=fxOn('gold',me),left=e=>Math.ceil((e.end-Date.now())/864e5);
   const buy=(item,t)=>{const it=SHOP[item];if(bal<it.cost){toast(tr('Pas assez de Ballons d’or.'));return}
     confirmBox(item==='gold'?`Mettre ton nom en or pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`:`Mettre une moustache 🥸 à <b>${esc(pname(t))}</b> pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`,tr('Acheter'),async()=>{
@@ -1266,8 +1282,8 @@ function similar(a,b){a=norm(a);b=norm(b);if(!a||!b)return false;
 async function addPlayer(force){
   const inp=document.getElementById('newName');const name=(inp?inp.value:S.setup.newName).trim().replace(/\s+/g,' ');
   if(!name)return;
-  const vis=p=>p.uid||p.guest;
-  const reuse=async p=>{try{if(!vis(p))await db.doc('players/'+p.id).update({guest:true});S.setup.newName='';render();toast(`« ${p.name} » ajouté comme invité.`)}catch(e){toast(errMsg(e))}};
+  const vis=p=>(p.uid||p.guest)&&!p.out;
+  const reuse=async p=>{try{if(!vis(p))await db.doc('players/'+p.id).update(p.out?{guest:true,out:false}:{guest:true});S.setup.newName='';render();toast(`« ${p.name} » ajouté comme invité.`)}catch(e){toast(errMsg(e))}};
   const same=S.players.find(p=>norm(p.name)===norm(name));
   if(same){if(vis(same))toast(`« ${same.name} » existe déjà.`);else reuse(same);return}
   const near=force?[]:S.players.filter(p=>similar(p.name,name));
@@ -1484,6 +1500,7 @@ $v.addEventListener('click',e=>{
   if(act==='addPlayer')addPlayer(false);
   else if(act==='delPlayer'){const p=b.dataset.p,pl=S.players.find(x=>x.id===p);
     confirmBox(`Retirer ${esc(pl?pl.name:'ce joueur')} de la liste ? Ses statistiques restent.`,'Retirer',async()=>{try{delete S.setup.assign[p];await db.doc('players/'+p).update({guest:false});render()}catch(e){toast(errMsg(e))}})}
+  else if(act==='kickP'){excludePlayer(b.dataset.p)}
   else if(act==='create'){b.disabled=true;createMatch().finally(()=>{b.disabled=false})}
   else if(act==='closeVotes'){const v=new Set(votesOf((cur()||{}).id).map(x=>x.voter)).size,n=cur()?parts(cur()).length:0;confirmBox(`Clôturer les votes (${v}/${n} ont voté) ? Plus personne ne pourra noter.`,'Clôturer',closeVotes)}
   else if(act==='close'){const m=cur();if(!m)return;const g=goalScore(m);S.closeForm={sA:String(g.A),sB:String(g.B),winner:g.A>g.B?'A':g.B>g.A?'B':'N'};const f=S.closeForm;
@@ -1607,7 +1624,7 @@ async function lostAccess(){
   if(Date.now()-(lostAccess.t||0)<20000){S.noDb=true;render();return}lostAccess.t=Date.now();
   lostBusy=true;const g=S.group,e=myEntry();
   try{if(!e||!e.k)throw 0;await ensureMember(g.id,e.k,true);lostBusy=false;connect({...g});}
-  catch(_){lostBusy=false;kick(g.id,'Accès au groupe perdu (mot de passe changé ou groupe supprimé).')}
+  catch(_){lostBusy=false;kick(g.id,'Accès au groupe perdu (mot de passe changé, exclusion ou groupe supprimé).')}
 }
 async function migrateAdmin(g,gd){
   const e=myGroups().find(x=>x.id===g.id);
@@ -1739,7 +1756,43 @@ function adminsBlock(){
   const ad=(g.admins||[]).map(nm).filter(Boolean);
   let h=`<p class="small muted" style="margin:0 0 12px">Admin principal : <b>${esc(nm(g.owner)||tr('le créateur'))}</b>${ad.length?`<br>Autres admins : <b>${esc(ad.join(', '))}</b>`:''}</p>`;
   if(isGOwner())h+='<button class="btn ghost" id="gadmins">👑 Gérer les admins</button>';
+  if(isGAdmin())h+='<button class="btn ghost" id="gmembers">👥 Gérer les membres</button>';
   return h;
+}
+function canExclude(uid){const g=S.gdoc||{};if(!uid||uid===S.uid||uid===g.owner)return false;if((g.admins||[]).includes(uid)&&!isGOwner())return false;return true}
+async function banUid(uid){const P='groups/'+S.group.id+'/';
+  await raw.doc('groups/'+S.group.id).update({banned:arrayUnion(uid)});
+  try{await raw.doc(P+'members/'+uid).delete()}catch(_){}
+  if((S.gdoc.admins||[]).includes(uid)&&isGOwner())try{await raw.doc('groups/'+S.group.id).update({admins:arrayRemove(uid)})}catch(_){}}
+function excludePlayer(pid,after){
+  const p=S.players.find(x=>x.id===pid);if(!p)return;
+  if(p.uid&&!canExclude(p.uid)){toast(tr('Impossible d’exclure cette personne.'));return}
+  confirmBox(p.uid?`Exclure <b>${esc(p.name)}</b> du groupe ? Il ne pourra plus voir ni rejoindre le groupe. Ses stats restent.`:`Retirer <b>${esc(p.name)}</b> de la liste ? Ses stats restent.`,p.uid?tr('Exclure'):tr('Retirer'),async()=>{
+    try{if(p.uid)await banUid(p.uid);await db.doc('players/'+pid).update(p.uid?{out:true,guest:false}:{guest:false});delete S.setup.assign[pid];toast(p.uid?tr('Membre exclu.'):tr('Joueur retiré.'));if(after)after()}catch(e){toast(errMsg(e))}})}
+async function membersModal(){
+  if(!isGAdmin())return;
+  openModal('<h2>👥 Membres</h2><p class="muted">Chargement…</p>');
+  let mem=[];try{mem=(await raw.col('groups/'+S.group.id+'/members').get()).docs.map(d=>({uid:d.id,...d.data()}))}catch(e){toast(errMsg(e))}
+  const g=S.gdoc||{},ban=g.banned||[],byUid={};S.players.forEach(p=>{if(p.uid)byUid[p.uid]=p});
+  const tag=(t,c)=>`<small class="mtag ${c||''}">${t}</small>`;
+  const role=u=>u===g.owner?tag('👑 créateur','own'):(g.admins||[]).includes(u)?tag('admin','adm'):'';
+  const active=S.players.filter(p=>(p.uid||p.guest)&&!p.out&&!ban.includes(p.uid)).sort((a,b)=>(!!b.uid-!!a.uid)||a.name.localeCompare(b.name,'fr'));
+  const spect=mem.filter(m=>!byUid[m.uid]&&!ban.includes(m.uid));
+  const out=[...S.players.filter(p=>p.out||(p.uid&&ban.includes(p.uid))),...ban.filter(u=>!byUid[u]).map(u=>({id:'',uid:u,name:tr('Spectateur exclu')}))];
+  const row=(name,tags,btn)=>`<div class="mrow"><span>${name}${tags}</span>${btn}</div>`;
+  const d=t=>t?new Date(t).toLocaleDateString(LANG==='en'?'en-GB':'fr-FR',{day:'numeric',month:'short'}):'';
+  openModal(`<h2>👥 Membres</h2>
+  <div class="mlist">${active.map(p=>row(esc(p.name),(p.uid?tag('compte'):tag('invité','gst'))+role(p.uid),
+      p.uid?(canExclude(p.uid)?`<button class="mbtn danger" data-mx="${p.id}">Exclure</button>`:''):`<button class="mbtn" data-mx="${p.id}">Retirer</button>`)).join('')}</div>
+  ${spect.length?`<h3 class="mh">Spectateurs sans compte</h3><div class="mlist">${spect.map(m=>row(tr('Spectateur')+(m.joinedAt?' · '+d(m.joinedAt):''),role(m.uid),canExclude(m.uid)?`<button class="mbtn danger" data-mu="${esc(m.uid)}">Exclure</button>`:'')).join('')}</div>`:''}
+  ${out.length?`<h3 class="mh">Exclus et retirés</h3><div class="mlist">${out.map(p=>row(esc(p.name),'',`<button class="mbtn" data-mr="${p.id}" data-ru="${esc(p.uid||'')}">Réintégrer</button>`)).join('')}</div>`:''}
+  <p class="small muted" style="margin:12px 0">Un membre exclu ne peut plus rejoindre le groupe, même avec le lien ou le mot de passe. Ses stats restent.</p>
+  <button class="btn ghost" id="mmx">Fermer</button>`);
+  $m.querySelector('#mmx').onclick=closeModal;
+  $m.querySelectorAll('[data-mx]').forEach(b=>b.onclick=()=>excludePlayer(b.dataset.mx,membersModal));
+  $m.querySelectorAll('[data-mu]').forEach(b=>b.onclick=()=>confirmBox(tr('Exclure ce spectateur du groupe ?'),tr('Exclure'),async()=>{try{await banUid(b.dataset.mu);toast(tr('Membre exclu.'));membersModal()}catch(e){toast(errMsg(e))}}));
+  $m.querySelectorAll('[data-mr]').forEach(b=>b.onclick=async()=>{const pid=b.dataset.mr,u=b.dataset.ru;
+    try{if(u)await raw.doc('groups/'+S.group.id).update({banned:arrayRemove(u)});if(pid){const p=S.players.find(x=>x.id===pid);await db.doc('players/'+pid).update(p&&p.uid?{out:false}:{guest:true,out:false})}toast(tr('Réintégré.'));membersModal()}catch(e){toast(errMsg(e))}});
 }
 function adminsModal(){
   const g=S.gdoc;if(!g||!isGOwner())return;
@@ -1891,7 +1944,7 @@ function groupMenu(){
   const on=(id,f)=>{const b=$m.querySelector('#'+id);if(b)b.onclick=f};
   $m.querySelectorAll('[data-gsw]').forEach(b=>b.onclick=()=>switchGroup(b.dataset.gsw));
   on('gclose',closeModal);on('gjoin',gJoin);on('gnew',gCreate);
-  on('gadmins',adminsModal);
+  on('gadmins',adminsModal);on('gmembers',membersModal);
   on('gshare',()=>{const t=trLines(`⚽ Rejoins le groupe « ${g.name} » pour noter nos matchs de foot à 5 :\n${joinLink()}`);
     if(navigator.share){navigator.share({text:t}).catch(()=>{});return}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')});
   on('gcopy',async()=>{try{await navigator.clipboard.writeText(joinLink());toast('Lien copié.')}catch(e){prompt(tr('Copie ce lien :'),joinLink())}});
