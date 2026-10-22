@@ -342,6 +342,23 @@ body.nogroup .tabs{display:none}
 .glist button{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px 14px;font:600 17px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif}
 .pav{width:44px;height:44px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:10px;border:2px solid var(--line)}
 .cmbtn.bgtog{color:rgba(255,255,255,.9);margin:6px auto 0;text-align:center;width:100%}
+.seg.themeseg{grid-template-columns:1fr 1fr 1fr;margin:8px 0 12px}
+.wbox .seg.themeseg{margin:8px 0 0}
+.toast.act{display:flex;align-items:center;gap:6px;padding:8px 8px 8px 16px;white-space:nowrap}
+.toast.act button{border:0;background:color-mix(in srgb,var(--bg) 22%,transparent);color:var(--bg);border-radius:999px;padding:8px 12px;font-weight:600;font-size:14px}
+.modal.mid{align-items:center}
+.modal.mid .mbox::before{display:none}
+.modal.mid .gpick{grid-template-columns:1fr 1fr;gap:8px}
+.modal.mid .gpick button{min-height:56px;font-size:18px}
+.gpick button.nopass{color:var(--muted)}
+.gold{background:linear-gradient(90deg,#8A5A00,#D49B00 45%,#F0C030 55%,#8A5A00);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent;font-weight:700}
+.board .gold,.top .gold,#board .gold{background-image:linear-gradient(90deg,#E6B800,#FFE45C 45%,#FFF6C2 55%,#E6B800);text-shadow:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .gold{background-image:linear-gradient(90deg,#E6B800,#FFE45C 45%,#FFF6C2 55%,#E6B800)}}
+:root[data-theme=dark] .gold{background-image:linear-gradient(90deg,#E6B800,#FFE45C 45%,#FFF6C2 55%,#E6B800)}
+.chips button.on.gold,.seg button.on.gold{-webkit-text-fill-color:currentColor;color:inherit!important;background:var(--ink)}
+.shopit{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.shopit>div{flex:1}.shopit small{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+.shopit .btn.inline{width:auto;margin:0;white-space:nowrap}
 .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
@@ -478,7 +495,7 @@ function cur(){const id=S.meta&&S.meta.currentMatchId;return id?S.matches.find(m
 function parts(m){return [...m.teams.A,...(m.subs.A||[]),...m.teams.B,...(m.subs.B||[])]}
 function teamOf(m,p){return (m.teams.A.includes(p)||(m.subs.A||[]).includes(p))?'A':'B'}
 function isSub(m,p){return (m.subs.A||[]).includes(p)||(m.subs.B||[]).includes(p)}
-function pname(p,m){const pl=S.players.find(x=>x.id===p);return pl?pl.name:((m&&m.names&&m.names[p])||'?')}
+function pname(p,m){const pl=S.players.find(x=>x.id===p);const n=pl?pl.name:((m&&m.names&&m.names[p])||'?');return S.fx&&fxOn('stache',p)?n+' 🥸':n}
 function tname(m,t){return (m.teamNames&&m.teamNames[t])||('Équipe '+t)}
 function elapsed(m){const t=m&&m.timer;if(!t)return 0;return (t.acc||0)+(t.start?Math.max(0,Date.now()-t.start):0)}
 function fmtClock(ms){const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
@@ -490,13 +507,22 @@ function goalLine(m,g){const sc=g.scorer==='csc'?'CSC':esc(pname(g.scorer,m));re
 function votesOf(mid){return S.votes.filter(v=>v.matchId===mid)}
 function closedMatches(){return S.matches.filter(m=>m.status==='closed').sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||0)-(a.createdAt||0))}
 
-function toast(msg){$t.textContent=msg;$t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>$t.hidden=true,2800)}
+function toast(msg){$t.className='toast';$t.textContent=msg;$t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>$t.hidden=true,2800)}
 function errMsg(e){const c=e&&e.code;if(c==='permission-denied')return 'Action refusée : vérifie les règles Firestore.';if(c==='resource-exhausted')return 'Quota Firebase atteint.';return 'Erreur réseau. Réessaie.'}
 const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 /* ---------- Langue ---------- */
 let LANG=(()=>{try{const l=localStorage.getItem('foot5_lang');if(l==='fr'||l==='en')return l}catch(e){}return /^fr/i.test(navigator.language||'fr')?'fr':'en'})();
 document.documentElement.lang=LANG;
 const EN={
+'🛒 Boutique':'🛒 Shop','Solde :':'Balance:','✨ Nom en or':'✨ Gold name','🥸 Moustache':'🥸 Moustache','Fermer':'Close','← Retour':'← Back',
+'Ton nom en or partout pendant 7 jours.':'Your name in gold everywhere for 7 days.',
+'Sur le nom d’un pote pendant 7 jours. Tout le monde la verra.':'On a friend’s name for 7 days. Everyone will see it.',
+'+50 🏆 par match joué. Gagne des paris pour en avoir plus.':'+50 🏆 per match played. Win bets to get more.',
+'🥸 Qui sera moustachu ?':'🥸 Who gets the moustache?','Pas assez de Ballons d’or.':'Not enough Golden balls.','Acheter':'Buy','✨ Ton nom brille en or.':'✨ Your name shines in gold.',
+'🥸 Moustache offerte par':'🥸 Moustache from',
+'CSC (adversaire)':'Own goal','Retour':'Back',
+'Qui a marqué ?':'Who scored?','+ Passeur':'+ Assist','But annulé.':'Goal undone.','Passe décisive':'Assist','Aucune':'None','Passe ajoutée.':'Assist added.',
+'Auto':'Auto','☀️ Clair':'☀️ Light','🌙 Sombre':'🌙 Dark',
 'Envoi de la photo…':'Uploading photo…','Photo de profil ajoutée.':'Profile photo added.','Tu ne peux changer que ta propre photo.':'You can only change your own photo.',
 '📷 Changer la photo de profil':'📷 Change profile photo','📷 Ajouter une photo de profil':'📷 Add a profile photo',
 '👀 Mode spectateur : crée un compte pour jouer, voter et parier.':'👀 Spectator mode: create an account to play, vote and bet.','Compte nécessaire':'Account required','Sans compte, tu peux seulement regarder les matchs et les stats.':'Without an account you can only view matches and stats.','Un joueur avec un compte doit créer le match.':'A player with an account must create the match.','Seul un admin peut modifier le score d’un match terminé.':'Only an admin can change the score of a finished match.','Crée un compte pour voter.':'Create an account to vote.','Sans compte, tu peux seulement regarder.':'Without an account you can only watch.','Ton compte n’est pas encore joueur de ce groupe.':'Your account isn’t a player in this group yet.','Ça se fait tout seul, patiente quelques secondes.':'It happens automatically, wait a few seconds.','Tu n’as pas joué ce match.':'You didn’t play this match.','Seuls les joueurs du match votent.':'Only players of the match vote.','Crée un compte pour parier.':'Create an account to bet.','Il faut un compte pour créer un groupe : tu en seras l’admin.':'You need an account to create a group: you’ll be its admin.','Tu seras l’admin du groupe. Tu pourras nommer d’autres admins.':'You’ll be the group admin. You can appoint other admins.','Mot de passe : 4 caractères min.':'Password: 4 characters min.','Admin principal :':'Main admin:','Autres admins :':'Other admins:','le créateur':'the creator','👑 Gérer les admins':'👑 Manage admins','👑 Admins':'👑 Admins','Un admin peut corriger un match terminé, supprimer des votes ou des matchs et changer le mot de passe du groupe. Seuls les joueurs avec un compte peuvent être nommés.':'An admin can fix a finished match, delete votes or matches and change the group password. Only players with an account can be appointed.','Aucun autre joueur avec un compte.':'No other player with an account.','Nommer admin':'Make admin','Ancien admin sans compte':'Former admin without account','Nouvel admin nommé.':'New admin appointed.','Retirer les droits admin de':'Remove admin rights from','admin du groupe ?':'group admin?',
@@ -587,6 +613,11 @@ const EN={
 'en haut du script. Voir README.':'at the top of the script. See README.','Nom équipe A':'Team A name','Nom équipe B':'Team B name','A :':'A:','B :':'B:'
 };
 const ENRX=[
+[/^ · encore (\d+) j$/,' · $1 days left'],[/^✨ Nom en or · encore (\d+) j$/,'✨ Gold name · $1 days left'],[/^ Actif encore (\d+) j\.$/,' Active for $1 more days.'],
+[/^Ton nom en or partout pendant 7 jours\. Actif encore (\d+) j\.$/,'Your name in gold everywhere for 7 days. Active for $1 more days.'],
+[/^🥸 Moustache · (\d+) 🏆$/,'🥸 Moustache · $1 🏆'],
+[/^Mettre ton nom en or pendant 7 jours pour $/,'Turn your name gold for 7 days for '],[/^Mettre une moustache 🥸 à $/,'Give a moustache 🥸 to '],[/^ pendant 7 jours pour $/,' for 7 days for '],
+[/^But de (.+)$/,'Goal by $1'],
 [/^Voir les (\d+) buts ▼$/,'Show all $1 goals ▼'],
 [/^Nommer$/,'Make'],[/^Retirer les droits admin de$/,'Remove admin rights from'],
 [/^⚽ Match du (.+)$/,'⚽ Match on $1'],[/^Match du (.+)$/,'Match on $1'],[/^(.+) gagne$/,(m,a)=>tr(a)+' wins'],[/^Votes ouverts : (\d+)\/(\d+)$/,'Voting open: $1/$2'],
@@ -643,6 +674,10 @@ if(LANG==='en'){
   if(document.body)go();else document.addEventListener('DOMContentLoaded',go);
 }
 function setLang(l){if(l===LANG)return;LS.set('foot5_lang',l);location.reload()}
+function applyTheme(){const t=LS.get('foot5_theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme}
+applyTheme();
+function setTheme(t){LS.set('foot5_theme',t);applyTheme();document.querySelectorAll('[data-theme-set]').forEach(b=>b.classList.toggle('on',b.dataset.themeSet===t))}
+const themeSeg=()=>{const t=LS.get('foot5_theme')||'auto';return `<div class="seg themeseg">${[['auto','Auto'],['light','☀️ Clair'],['dark','🌙 Sombre']].map(([k,l])=>`<button data-theme-set="${k}" class="${t===k?'on':''}">${l}</button>`).join('')}</div>`};
 const langSeg=()=>`<div class="seg langseg" data-notr><button data-lang="fr" class="${LANG==='fr'?'on':''}">Français</button><button data-lang="en" class="${LANG==='en'?'on':''}">English</button></div>`;
 
 function refreshOrg(){S.isOrg=true}
@@ -684,7 +719,7 @@ function render(){
   else if(!S.group)h=vWelcome();
   else if(!S.ready)h='<p class="muted">Chargement…</p>'+(S.slow?'<p class="small muted">Étape : '+esc(S.step||'?')+' · reçu : '+Object.keys(S.got).filter(k=>S.got[k]).join(',')+(S.dbErr?' · erreur : '+esc(S.dbErr):'')+'</p>':'');
   else h=(S.anon?roBanner():'')+({match:vMatch,vote:vVote,stats:vStats,hist:vHist})[S.tab]();
-  $v.innerHTML=h;
+  $v.innerHTML=h;goldify($v);goldify($b);
 }
 (()=>{const l=document.querySelectorAll('.bgs div');let i=0;if(l.length<2||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   setInterval(()=>{l[i].classList.remove('on');i=(i+1)%l.length;l[i].classList.add('on')},8000)})();
@@ -722,7 +757,7 @@ function boardGoals(m){
 $b.addEventListener('click',e=>{
   const bg=e.target.closest('[data-bg]');if(bg){const k=bg.dataset.bg;S.openCm.has(k)?S.openCm.delete(k):S.openCm.add(k);render();return}
   const gt=e.target.closest('[data-gt]');
-  if(gt){const t=gt.dataset.gt;S.goalForm={team:S.goalForm.team===t?'':t,scorer:'',assist:''};render();if(S.goalForm.team)window.scrollTo({top:0,behavior:'smooth'});return}
+  if(gt){goalPop(gt.dataset.gt);return}
   const d=e.target.closest('[data-act="delGoal"]');
   if(d)confirmBox('Supprimer ce but ?','Supprimer',()=>delGoal(d.dataset.g));
 });
@@ -757,17 +792,48 @@ function lineup(m,voted){
   return `<div class="lineup">${col('A')}${col('B')}</div>`;
 }
 function goalFormCard(m){
-  const f=S.goalForm;
-  let form='';
-  if(!f.team)return '';
-  {const pl=teamPlayers(m,f.team);
-    const card=(k,v,label,on)=>`<button data-gc="${k}" data-v="${v}" class="${on?'on':''}" aria-pressed="${on}">${label}</button>`;
-    form=`<div class="small muted" style="margin-bottom:6px">Buteur</div>
-    <div class="pick gpick" style="margin-bottom:12px">${pl.map(p=>card('scorer',p,esc(pname(p,m)),f.scorer===p)).join('')}${card('scorer','csc','CSC (adversaire)',f.scorer==='csc')}</div>
-    ${f.scorer?`<div class="small muted" style="margin-bottom:6px">Passe décisive</div>
-    <div class="pick gpick" style="margin-bottom:12px">${card('assist','','Aucune',!f.assist)}${pl.filter(p=>p!==f.scorer).map(p=>card('assist',p,esc(pname(p,m)),f.assist===p)).join('')}</div>`:''}
-    ${f.scorer?'<button class="btn" data-act="addGoal">Ajouter le but</button>':''}`}
-  return `<div class="card gform"><h2><span class="dot ${f.team}"></span> But ${esc(tname(m,f.team))}</h2>${form}<button class="btn ghost" data-gt="${f.team}">Annuler</button></div>`;
+  const f=S.goalForm;if(!f.team)return '';
+  const pl=teamPlayers(m,f.team);
+  const card=(v,label)=>`<button data-gq="${v}">${label}</button>`;
+  return `<div class="card gform"><h2><span class="dot ${f.team}"></span> But ${esc(tname(m,f.team))}</h2><div class="small muted" style="margin-bottom:6px">Qui a marqué ?</div>
+  <div class="pick gpick" style="margin-bottom:12px">${pl.map(p=>card(p,esc(pname(p,m)))).join('')}${card('csc','CSC (adversaire)')}</div>
+  <button class="btn ghost" data-gt="${f.team}">Annuler</button></div>`;
+}
+function actToast(msg,acts,ms){
+  clearTimeout(toast.t);$t.className='toast act';$t.innerHTML='';
+  const sp=document.createElement('span');sp.textContent=msg;sp.style.marginRight='4px';$t.appendChild(sp);
+  acts.forEach(([l,fn])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{$t.hidden=true;$t.className='toast';fn()};$t.appendChild(b)});
+  $t.hidden=false;toast.t=setTimeout(()=>{$t.hidden=true;$t.className='toast'},ms||5000);
+}
+function goalPop(team){
+  const m=cur();if(!m||m.status!=='open')return;
+  const min=m.timer?Math.floor(elapsed(m)/60000)+1:null,pl=teamPlayers(m,team);
+  const head=t=>`<h2 style="margin:0 0 4px"><span class="dot ${team}"></span> But ${esc(tname(m,team))}</h2><div class="small muted" style="margin-bottom:12px">${t}</div>`;
+  const step1=()=>{openModal(head(tr('Qui a marqué ?'))+`<div class="pick gpick">${pl.map(p=>`<button data-s1="${p}">${esc(pname(p,m))}</button>`).join('')}<button data-s1="csc">${tr('CSC (adversaire)')}</button></div><button class="btn ghost" id="gpx" style="margin-top:12px">Annuler</button>`);
+    $m.classList.add('mid');$m.querySelector('#gpx').onclick=closeModal;
+    $m.querySelectorAll('[data-s1]').forEach(b=>b.onclick=()=>{const sc=b.dataset.s1,mates=pl.filter(p=>p!==sc);if(sc==='csc'||!mates.length){closeModal();quickGoal(team,sc,'',min)}else step2(sc,mates)})};
+  const step2=(sc,mates)=>{openModal(head(`${tr('Passe décisive')} · ⚽ ${esc(pname(sc,m))}`)+`<div class="pick gpick">${mates.map(p=>`<button data-s2="${p}">${esc(pname(p,m))}</button>`).join('')}<button data-s2="" class="nopass">${tr('Aucune')}</button></div><button class="btn ghost" id="gpb" style="margin-top:12px">← ${tr('Retour')}</button>`);
+    $m.classList.add('mid');$m.querySelector('#gpb').onclick=step1;
+    $m.querySelectorAll('[data-s2]').forEach(b=>b.onclick=()=>{closeModal();quickGoal(team,sc,b.dataset.s2,min)})};
+  step1();
+}
+async function quickGoal(team,scorer,assist,min){
+  const m=cur();if(!m||m.status!=='open')return;
+  const g={id:rid('g'),team,scorer,assist:assist||'',at:Date.now()};if(min!=null)g.min=min;else if(m.timer)g.min=Math.floor(elapsed(m)/60000)+1;
+  db.doc('matches/'+m.id).update({goals:arrayUnion(g)}).catch(e=>toast(errMsg(e)));
+  S.goalForm={team:'',scorer:'',assist:''};S.closeForm={sA:'',sB:'',winner:''};render();
+  const who=scorer==='csc'?tr('CSC'):pname(scorer,m);
+  const acts=[];if(!assist&&scorer!=='csc'&&teamPlayers(m,team).length>1)acts.push([tr('+ Passeur'),()=>assistPick(g.id)]);
+  acts.push([tr('Annuler'),()=>delGoal(g.id).then(()=>toast('But annulé.'))]);
+  actToast('⚽ '+(LANG==='en'?'Goal: ':'But de ')+who,acts,5000);
+}
+function assistPick(gid){
+  const m=cur();if(!m)return;const g=goalsOf(m).find(x=>x.id===gid);if(!g)return;
+  const pl=teamPlayers(m,g.team).filter(p=>p!==g.scorer);
+  openModal(`<h2>Passe décisive</h2><div class="small muted" style="margin:-4px 0 10px">But de ${esc(pname(g.scorer,m))}</div><div class="pick gpick" style="margin-bottom:12px">${pl.map(p=>`<button data-as="${p}">${esc(pname(p,m))}</button>`).join('')}</div><button class="btn ghost" id="asx">Aucune</button>`);
+  $m.querySelector('#asx').onclick=closeModal;
+  $m.querySelectorAll('[data-as]').forEach(b=>b.onclick=async()=>{closeModal();const mm=cur();const old=mm&&goalsOf(mm).find(x=>x.id===gid);if(!old)return;
+    try{await db.doc('matches/'+mm.id).update({goals:arrayRemove(old)});await db.doc('matches/'+mm.id).update({goals:arrayUnion({...old,assist:b.dataset.as})});toast('Passe ajoutée.')}catch(e){toast(errMsg(e))}});
 }
 function closeForm(m){
   const f=S.closeForm,gsc=goalScore(m);
@@ -874,7 +940,37 @@ function computeOdds(teams,subs){
 function oddsOf(m){return m.odds||computeOdds(m.teams,m.subs)}
 const fmtOdd=n=>LANG==='en'?n.toFixed(2):n.toFixed(2).replace('.',',');
 function pronosOf(mid){return (S.pronos||[]).filter(x=>x.matchId===mid&&x.pick&&x.stake>0)}
-const BO_START=100,BO_MATCH=10;
+const BO_START=100,BO_MATCH=50,SHOP={gold:{cost:1000,days:7},stache:{cost:2000,days:7}};
+function shopFx(){const fx={gold:{},stache:{}},DAY=864e5;
+  (S.shop||[]).slice().sort((a,b)=>a.at-b.at).forEach(x=>{const it=SHOP[x.item];if(!it)return;const t=fx[x.item],cur=t[x.target];
+    const start=cur&&cur.end>x.at?cur.end:x.at;t[x.target]={end:start+it.days*DAY,by:x.buyer}});
+  return fx}
+function fxOn(item,pid){const e=S.fx&&S.fx[item][pid];return e&&e.end>Date.now()?e:null}
+function goldify(root){
+  const names=new Set(S.players.filter(p=>fxOn('gold',p.id)).map(p=>p.name));if(!names.size||!root)return;
+  root.querySelectorAll('span,b,button,li,div,a,td,strong,option').forEach(el=>{if(el.childNodes.length!==1||el.firstChild.nodeType!==3||el.closest('.chips,.seg,.sorts,.pick,select'))return;
+    const t=el.firstChild.nodeValue.replace(/ 🥸$/,'').trim();if(names.has(t))el.classList.add('gold')});
+}
+function shopModal(target){
+  const me=myPid();if(!me){if(S.anon)needAccount();return}
+  const bal=balanceOf(me),vis=S.players.filter(p=>(p.uid||p.guest)&&p.id!==me).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const g=fxOn('gold',me),left=e=>Math.ceil((e.end-Date.now())/864e5);
+  const buy=(item,t)=>{const it=SHOP[item];if(bal<it.cost){toast(tr('Pas assez de Ballons d’or.'));return}
+    confirmBox(item==='gold'?`Mettre ton nom en or pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`:`Mettre une moustache 🥸 à <b>${esc(pname(t))}</b> pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`,tr('Acheter'),async()=>{
+      try{await db.doc('shop/'+rid('s')).set({buyer:me,target:t,item,cost:it.cost,at:Date.now()});toast(item==='gold'?tr('✨ Ton nom brille en or.'):'🥸 '+pname(t).replace(/ 🥸$/,'')+(LANG==='en'?' got a moustache.':' a une moustache.'))}catch(e){toast(errMsg(e))}})};
+  const step1=()=>{openModal(`<h2>🛒 Boutique</h2><p style="margin:0 0 14px">Solde : <b>${boFmt(bal)}</b></p>
+    <div class="shopit"><div><b class="gold">✨ Nom en or</b><small>Ton nom en or partout pendant ${SHOP.gold.days} jours.${g?` Actif encore ${left(g)} j.`:''}</small></div><button class="btn inline" id="bgold" ${bal<SHOP.gold.cost?'disabled':''}>${SHOP.gold.cost} 🏆</button></div>
+    <div class="shopit"><div><b>🥸 Moustache</b><small>Sur le nom d’un pote pendant ${SHOP.stache.days} jours. Tout le monde la verra.</small></div><button class="btn inline" id="bstache" ${bal<SHOP.stache.cost?'disabled':''}>${SHOP.stache.cost} 🏆</button></div>
+    <p class="small muted" style="margin:4px 0 12px">+${BO_MATCH} 🏆 par match joué. Gagne des paris pour en avoir plus.</p>
+    <button class="btn ghost" id="shx">Fermer</button>`);
+    $m.querySelector('#shx').onclick=closeModal;
+    $m.querySelector('#bgold').onclick=()=>buy('gold',me);
+    $m.querySelector('#bstache').onclick=()=>{if(bal<SHOP.stache.cost){toast(tr('Pas assez de Ballons d’or.'));return}step2()}};
+  const step2=()=>{openModal(`<h2>🥸 Qui sera moustachu ?</h2><div class="pick gpick" style="margin-bottom:12px">${vis.map(p=>`<button data-vic="${p.id}">${esc(pname(p.id))}</button>`).join('')}</div><button class="btn ghost" id="shb">← Retour</button>`);
+    $m.classList.add('mid');$m.querySelector('#shb').onclick=step1;goldify($m);
+    $m.querySelectorAll('[data-vic]').forEach(b=>b.onclick=()=>buy('stache',b.dataset.vic))};
+  if(target&&target!==me){if(bal<SHOP.stache.cost){toast(tr('Pas assez de Ballons d’or.'));return}buy('stache',target)}else step1();
+}
 const boFmt=n=>`${Math.round(n)} 🏆`;
 function outcome(a,b){return a>b?'A':b>a?'B':'N'}
 function betResult(m,x){if(!m.score||(m.status!=='voting'&&m.status!=='closed'))return null;const o=outcome(m.score.A,m.score.B);
@@ -882,6 +978,7 @@ function betResult(m,x){if(!m.score||(m.status!=='voting'&&m.status!=='closed'))
 function balanceOf(pid,exceptMid){
   let b=BO_START;
   for(const m of finished()){if(parts(m).includes(pid))b+=BO_MATCH}
+  for(const x of (S.shop||[]))if(x.buyer===pid)b-=x.cost||0;
   for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0)||x.matchId===exceptMid)continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m)continue;
     const r=betResult(m,x);b+=r==null?-x.stake:r}
   return Math.max(0,b);
@@ -992,7 +1089,7 @@ function drawCard(pid,av){
   g.fillStyle=tier[2];g.beginPath();for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;g.lineTo(Math.cos(a)*26,Math.sin(a)*26)}g.closePath();g.fill();
   for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;g.beginPath();g.moveTo(Math.cos(a)*26,Math.sin(a)*26);g.lineTo(Math.cos(a)*62,Math.sin(a)*62);g.stroke()}g.restore();}
   g.textAlign='center';let name=pname(pid,x.last).toUpperCase();let fs=78;g.font=`800 ${fs}px ${F}`;while(g.measureText(name).width>W-100&&fs>36){fs-=4;g.font=`800 ${fs}px ${F}`}
-  g.fillText(name,W/2,420);g.fillRect(90,450,W-180,4);
+  if(fxOn('gold',pid)){g.save();g.fillStyle='#FFD700';g.strokeStyle='#5A4300';g.lineWidth=3;g.strokeText(name,W/2,420);g.fillText(name,W/2,420);g.restore()}else g.fillText(name,W/2,420);g.fillRect(90,450,W-180,4);
   const L=LANG==='en';const kp=[[x.mj,L?'PLAYED':'MATCHS'],[Math.round(x.wr)+'%',L?'WIN %':'VICTOIRES'],[fmt1(x.avg),L?'AVERAGE':'MOYENNE'],[x.g,L?'GOALS':'BUTS'],[x.pd,L?'ASSISTS':'PASSES D'],[`${x.v}-${x.n}-${x.d}`,L?'W-D-L':'V-N-D']];
   kp.forEach(([v,l],i)=>{const cx=W/4+(i%2)*W/2,cy=540+Math.floor(i/2)*96;g.font='800 52px '+F;g.fillText(String(v),cx,cy);g.font='700 20px '+F;g.globalAlpha=.75;g.fillText(l,cx,cy+30);g.globalAlpha=1});
   g.font='700 22px '+F;g.globalAlpha=.6;g.fillText(L?'5-A-SIDE':'FOOT À 5',W/2,H-48);g.globalAlpha=1;
@@ -1042,7 +1139,8 @@ function h2hCard(ms,everyone){
 }
 function prCard(){
   const l=pronoStats();if(!l.length)return '';
-  return `<div class="card"><h2>🏆 Ballons d’or</h2><ol class="rank">${l.slice(0,10).map(x=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o.bal>x.bal).length}</span><span class="nm">${plink(x.p,x.m)}<small class="muted" style="display:block;font-size:12px">${x.ok}/${x.n} paris gagnés</small></span><span class="avg">${Math.round(x.bal)} <small style="font-size:14px">🏆</small></span></li>`).join('')}</ol></div>`;
+  const sb=myPid()?'<button class="btn ghost" data-act="shop" style="margin:0 0 10px">🛒 Boutique</button>':'';
+  return `<div class="card"><h2>🏆 Ballons d’or</h2>${sb}<ol class="rank">${l.slice(0,10).map(x=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o.bal>x.bal).length}</span><span class="nm">${plink(x.p,x.m)}<small class="muted" style="display:block;font-size:12px">${x.ok}/${x.n} paris gagnés</small></span><span class="avg">${Math.round(x.bal)} <small style="font-size:14px">🏆</small></span></li>`).join('')}</ol></div>`;
 }
 const plink=(p,m)=>`<button class="plink" data-pl="${p}">${esc(pname(p,m))}</button>`;
 function vPlayer(pid){
@@ -1055,7 +1153,9 @@ function vPlayer(pid){
   const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
   const showAll=S.openCm.has('pl:'+pid);
   return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${(()=>{const a=avatarOf(pid);return a?`<img class="pav" src="${a}" alt="">`:''})()}${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
-  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div><p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${!S.anon&&(pid===myPid()||isGAdmin())?`<label class="upl">📷 ${avatarOf(pid)?'Changer la photo de profil':'Ajouter une photo de profil'}<input type="file" accept="image/*" data-pp="${pid}"></label>`:''}<button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
+  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div><p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
+    return (st?`<p class="small" style="margin:6px 0 0">🥸 Moustache offerte par <b>${esc(pname(st.by))}</b> · encore ${d(st)} j</p>`:'')+(go?`<p class="small" style="margin:6px 0 0">✨ Nom en or · encore ${d(go)} j</p>`:'')})()}
+  ${myPid()?(pid===myPid()?'<button class="btn ghost" data-act="shop" style="margin:12px 0 0">🛒 Boutique</button>':`<button class="btn ghost" data-act="shop" data-p="${pid}" style="margin:12px 0 0">🥸 Moustache · ${SHOP.stache.cost} 🏆</button>`):''}${!S.anon&&(pid===myPid()||isGAdmin())?`<label class="upl">📷 ${avatarOf(pid)?'Changer la photo de profil':'Ajouter une photo de profil'}<input type="file" accept="image/*" data-pp="${pid}"></label>`:''}<button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
   <div class="card"><h2>Badges</h2>${bd.length?`<div class="badges">${bd.map(([i,l])=>`<span class="badge"><i>${i}</i>${l}</span>`).join('')}</div>`:'<p class="small muted" style="margin:0">Aucun badge pour l’instant.</p>'}</div>
   <div class="card"><h2>Matchs</h2><ul class="mlog">${[...x.log].reverse().map(l=>`<li data-goto="${l.m.id}"><span class="res ${l.res}">${l.res}</span><span><span class="small muted">${esc(fmtDate(l.m.date))}</span><br>${l.m.score?`${l.m.score.A} – ${l.m.score.B}`:''} ${l.g?' ⚽×'+l.g:''}${l.pd?' 🅰️×'+l.pd:''}${l.motm?' ⭐':''}</span><span class="avg" style="font:700 22px/1 -apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,'Segoe UI',Roboto,sans-serif">${fmt1(l.note)}</span></li>`).join('')}</ul></div>
   <div class="card"><h2>Commentaires reçus</h2>${coms.length?`<ol class="rank">${(showAll?coms:coms.slice(0,5)).map(o=>`<li style="grid-template-columns:1fr auto"><span class="nm" style="font-style:italic">« ${esc(o.c)} »</span><span class="nv">${esc(fmtDate(o.m.date))}</span></li>`).join('')}</ol>${coms.length>5?`<button class="cmbtn" data-cm="pl:${pid}">${showAll?'Voir moins ▲':`Voir les ${coms.length} ▼`}</button>`:''}`:'<p class="small muted" style="margin:0">Aucun.</p>'}</div>`;
@@ -1147,8 +1247,8 @@ function vHist(){
 }
 
 /* ---------- Fenêtre ---------- */
-function openModal(html){$m.innerHTML=`<div class="mbox" role="dialog" aria-modal="true">${html}</div>`;$m.hidden=false;const f=$m.querySelector('input,button');if(f)f.focus()}
-function closeModal(){$m.hidden=true;$m.innerHTML=''}
+function openModal(html){$m.innerHTML=`<div class="mbox" role="dialog" aria-modal="true">${html}</div>`;$m.hidden=false;goldify($m);const f=$m.querySelector('input,button');if(f)f.focus()}
+function closeModal(){$m.hidden=true;$m.innerHTML='';$m.classList.remove('mid')}
 function confirmBox(text,ok,fn,word){
   openModal(`<p style="margin-top:0">${text}</p>${word?`<label class="fld">Tape ${word} pour confirmer<input id="cword" autocomplete="off"></label>`:''}<button class="btn danger" id="cok">${ok}</button><button class="btn ghost" id="cno">Annuler</button>`);
   $m.querySelector('#cno').onclick=closeModal;
@@ -1340,6 +1440,15 @@ async function resetAll(){
 
 /* ---------- Événements ---------- */
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;S.tab=b.dataset.tab;S.playerView=null;render();window.scrollTo(0,0)});
+{const TABS=['match','vote','stats','hist'];let sx=null,sy=0,st=0,ok=false;
+  const scrollsX=el=>{for(;el&&el!==document.body;el=el.parentElement){if(el.matches&&el.matches('input,select,textarea,canvas,svg'))return true;if(el.scrollWidth>el.clientWidth+2&&/(auto|scroll)/.test(getComputedStyle(el).overflowX))return true}return false};
+  document.addEventListener('touchstart',e=>{if(e.touches.length!==1||!S.group||!$m.hidden){sx=null;return}
+    const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();ok=!scrollsX(e.target)&&sx>20&&sx<innerWidth-20},{passive:true});
+  document.addEventListener('touchend',e=>{if(sx===null||!ok)return;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;sx=null;
+    if(Date.now()-st>600||Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*.5)return;
+    const i=TABS.indexOf(S.tab),j=i+(dx<0?1:-1);if(j<0||j>=TABS.length)return;
+    S.tab=TABS[j];S.playerView=null;render();window.scrollTo(0,0);
+    $v.animate&&$v.animate([{transform:`translateX(${dx<0?40:-40}px)`,opacity:.4},{transform:'none',opacity:1}],{duration:180,easing:'ease-out'})},{passive:true});}
 $v.addEventListener('click',e=>{
   const r=e.target.closest('.rates button');
   if(r){const box=r.parentElement,p=box.dataset.p,n=+r.dataset.r;S.draft.ratings[p]=n;
@@ -1355,6 +1464,7 @@ $v.addEventListener('click',e=>{
   if(w){S.closeForm.winner=w.dataset.w;document.querySelectorAll('#wseg button').forEach(b=>b.classList.toggle('on',b.dataset.w===S.closeForm.winner));return}
   const gt=e.target.closest('[data-gt]');
   if(gt){const t=gt.dataset.gt;S.goalForm={team:S.goalForm.team===t?'':t,scorer:'',assist:''};render();return}
+  const gq=e.target.closest('[data-gq]');if(gq){if(S.anon){needAccount();return}quickGoal(S.goalForm.team,gq.dataset.gq);return}
   const gc=e.target.closest('[data-gc]');
   if(gc){const k=gc.dataset.gc,v=gc.dataset.v;S.goalForm[k]=v;if(k==='scorer'&&S.goalForm.assist===v)S.goalForm.assist='';render();return}
   const pl=e.target.closest('[data-pl]');if(pl){S.playerView=pl.dataset.pl;S.tab='stats';render();window.scrollTo(0,0);return}
@@ -1391,6 +1501,7 @@ $v.addEventListener('click',e=>{
   else if(act==='tReset')confirmBox('Remettre le chrono à zéro ?','Remise à zéro',()=>timer('reset'));
   else if(act==='reopen')confirmBox('Revenir au match ? Les votes déjà faits sont conservés.','Revenir au match',reopen);
   else if(act==='newMatch')newMatch();
+  else if(act==='shop')shopModal(b.dataset.p);
   else if(act==='goVote'){S.tab='vote';render();window.scrollTo(0,0)}
   else if(act==='addGoal'){b.disabled=true;addGoal().finally(()=>{b.disabled=false})}
   else if(act==='delGoal')confirmBox('Supprimer ce but ?','Supprimer',()=>delGoal(b.dataset.g));
@@ -1480,10 +1591,10 @@ function vWelcome(){
   <div class="card wbox"><h2>Groupe</h2><button class="btn" data-act="gJoin">Rejoindre un groupe</button>
   <button class="btn ghost" data-act="gCreate">Créer un groupe</button></div>
   <div class="card wbox"><h2>Compte</h2>${S.anon?'<p class="small muted" style="margin:-4px 0 10px">Nécessaire pour jouer, voter, parier et créer un groupe. Sans compte : lecture seule.</p><button class="btn ghost" data-acc="new">Créer un compte</button><button class="btn ghost" data-acc="log">Se connecter</button>':accountLine()}</div>
-  <div class="card wbox">${installBtn()}${langSeg()}</div>`;
+  <div class="card wbox">${installBtn()}${langSeg()}${themeSeg()}</div>`;
 }
-$v.addEventListener('click',e=>{const b=e.target.closest('[data-gsw]');if(b)switchGroup(b.dataset.gsw);const l=e.target.closest('[data-lang]');if(l)setLang(l.dataset.lang)});
-$m.addEventListener('click',e=>{const l=e.target.closest('[data-lang]');if(l)setLang(l.dataset.lang)});
+$v.addEventListener('click',e=>{const b=e.target.closest('[data-gsw]');if(b)switchGroup(b.dataset.gsw);const l=e.target.closest('[data-lang]');if(l)setLang(l.dataset.lang);const th=e.target.closest('[data-theme-set]');if(th)setTheme(th.dataset.themeSet)});
+$m.addEventListener('click',e=>{const l=e.target.closest('[data-lang]');if(l)setLang(l.dataset.lang);const th=e.target.closest('[data-theme-set]');if(th)setTheme(th.dataset.themeSet)});
 async function ensureMember(id,k,force){
   const e=myGroups().find(x=>x.id===id)||{};
   if(!force&&e.mem===S.uid&&e.k===k)return true;
@@ -1507,7 +1618,7 @@ async function migrateAdmin(g,gd){
 }
 function connect(g){
   unsubs.forEach(u=>{try{u()}catch(_){}});unsubs=[];
-  S.avatars={};Object.assign(S,{group:g,gdoc:null,me:null,claims:{},gotClaims:true,pronos:[],prDraft:null,h2h:{a:'',b:''},players:[],matches:[],votes:[],meta:null,config:{},got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,
+  S.avatars={};Object.assign(S,{group:g,gdoc:null,me:null,claims:{},gotClaims:true,pronos:[],shop:[],fx:null,prDraft:null,h2h:{a:'',b:''},players:[],matches:[],votes:[],meta:null,config:{},got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,
     voter:null,draft:null,voteMsg:null,playerView:null,openHist:null,photos:{},tab:'match',openCm:new Set(),
     sf:{mode:'all',n:5,from:'',to:'',players:[]},goalForm:{team:'',scorer:'',assist:''},closeForm:{sA:'',sB:'',winner:''}});
   S.setup.assign={};S.setup.nameA='';S.setup.nameB='';S.setup.newName='';
@@ -1539,6 +1650,9 @@ function subscribe(g){
     const m=cur();if(S.voter&&(!m||m.id!==S.voter.mid||m.status!=='voting')){S.voter=null;S.draft=null}
     autoVoter();schedule()},e=>onErr(e,'matches')));
   unsubs.push(db.collection('pronos').onSnapshot(s=>{S.pronos=s.docs.map(d=>({id:d.id,...d.data()}));schedule()},e=>onErr(e,'pronos')));
+  {let first=true;unsubs.push(db.collection('shop').onSnapshot(s=>{const old=new Set((S.shop||[]).map(x=>x.id));S.shop=s.docs.map(d=>({id:d.id,...d.data()}));S.fx=shopFx();
+    const me=myPid();if(!first&&me)S.shop.filter(x=>!old.has(x.id)&&x.item==='stache'&&x.target===me&&x.buyer!==me).forEach(x=>setTimeout(()=>toast('🥸 '+pname(x.buyer)+(LANG==='en'?' gave you a moustache!':' t’a mis une moustache !')),300));
+    first=false;schedule()},e=>onErr(e,'shop')))}
   unsubs.push(db.collection('votes').onSnapshot(s=>{S.votes=s.docs.map(d=>({id:d.id,...d.data()}));markReady('v');autoVoter();schedule()},e=>onErr(e,'votes')));
   unsubs.push(db.doc('meta/state').onSnapshot(d=>{S.meta=d.exists?d.data():{};markReady('s');autoVoter();schedule()},e=>onErr(e,'state')));
   unsubs.push(db.doc('meta/config').onSnapshot(d=>{S.config=d.exists?d.data():{};refreshOrg();markReady('c');schedule()},e=>onErr(e,'config')));
@@ -1773,7 +1887,7 @@ function groupMenu(){
   <button class="btn ghost" id="gjoin">Rejoindre un autre groupe</button>
   <button class="btn ghost" id="gnew">Créer un groupe</button>
   <button class="btn danger" id="gleave">Quitter ce groupe</button>
-  ${installBtn()}${langSeg()}<button class="btn ghost" id="gclose">Fermer</button>`);
+  ${installBtn()}${langSeg()}${themeSeg()}<button class="btn ghost" id="gclose">Fermer</button>`);
   const on=(id,f)=>{const b=$m.querySelector('#'+id);if(b)b.onclick=f};
   $m.querySelectorAll('[data-gsw]').forEach(b=>b.onclick=()=>switchGroup(b.dataset.gsw));
   on('gclose',closeModal);on('gjoin',gJoin);on('gnew',gCreate);
