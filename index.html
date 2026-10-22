@@ -340,6 +340,7 @@ th{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
 body.nogroup .tabs{display:none}
 .glist{display:grid;gap:8px;margin-bottom:12px}
 .glist button{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px 14px;font:600 17px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif}
+.pav{width:44px;height:44px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:10px;border:2px solid var(--line)}
 .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
@@ -495,6 +496,8 @@ const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k
 let LANG=(()=>{try{const l=localStorage.getItem('foot5_lang');if(l==='fr'||l==='en')return l}catch(e){}return /^fr/i.test(navigator.language||'fr')?'fr':'en'})();
 document.documentElement.lang=LANG;
 const EN={
+'Envoi de la photo…':'Uploading photo…','Photo de profil ajoutée.':'Profile photo added.','Tu ne peux changer que ta propre photo.':'You can only change your own photo.',
+'📷 Changer la photo de profil':'📷 Change profile photo','📷 Ajouter une photo de profil':'📷 Add a profile photo',
 '👀 Mode spectateur : crée un compte pour jouer, voter et parier.':'👀 Spectator mode: create an account to play, vote and bet.','Compte nécessaire':'Account required','Sans compte, tu peux seulement regarder les matchs et les stats.':'Without an account you can only view matches and stats.','Un joueur avec un compte doit créer le match.':'A player with an account must create the match.','Seul un admin peut modifier le score d’un match terminé.':'Only an admin can change the score of a finished match.','Crée un compte pour voter.':'Create an account to vote.','Sans compte, tu peux seulement regarder.':'Without an account you can only watch.','Ton compte n’est pas encore joueur de ce groupe.':'Your account isn’t a player in this group yet.','Ça se fait tout seul, patiente quelques secondes.':'It happens automatically, wait a few seconds.','Tu n’as pas joué ce match.':'You didn’t play this match.','Seuls les joueurs du match votent.':'Only players of the match vote.','Crée un compte pour parier.':'Create an account to bet.','Il faut un compte pour créer un groupe : tu en seras l’admin.':'You need an account to create a group: you’ll be its admin.','Tu seras l’admin du groupe. Tu pourras nommer d’autres admins.':'You’ll be the group admin. You can appoint other admins.','Mot de passe : 4 caractères min.':'Password: 4 characters min.','Admin principal :':'Main admin:','Autres admins :':'Other admins:','le créateur':'the creator','👑 Gérer les admins':'👑 Manage admins','👑 Admins':'👑 Admins','Un admin peut corriger un match terminé, supprimer des votes ou des matchs et changer le mot de passe du groupe. Seuls les joueurs avec un compte peuvent être nommés.':'An admin can fix a finished match, delete votes or matches and change the group password. Only players with an account can be appointed.','Aucun autre joueur avec un compte.':'No other player with an account.','Nommer admin':'Make admin','Ancien admin sans compte':'Former admin without account','Nouvel admin nommé.':'New admin appointed.','Retirer les droits admin de':'Remove admin rights from','admin du groupe ?':'group admin?',
 'Foot à 5':'5-a-side','Foot à 5 – Notes':'5-a-side – Ratings','Match':'Match','Voter':'Vote','Stats':'Stats','Historique':'History','Sections':'Sections',
 'Annuler':'Cancel','Tous':'All','Tout':'All','Derniers':'Last','Dates':'Dates','Joueurs':'Players','Joueur':'Player','Filtres':'Filters',
@@ -946,7 +949,21 @@ function badgesOf(x,all){
   if(el.length>=3&&x.mj>=5){const min=Math.min(...el.map(y=>y.wr));if(x.wr===min&&x.wr<50)b.push(['🐈‍⬛','Chat noir']);}
   return b;
 }
-function drawCard(pid){
+S.avatars={};
+function avatarOf(pid){const a=S.avatars[pid];if(a===undefined&&db){S.avatars[pid]='loading';db.doc('avatars/'+pid).get().then(d=>{S.avatars[pid]=d.exists?d.data().data:null;schedule()}).catch(()=>{S.avatars[pid]=null})}return a&&a!=='loading'?a:null}
+async function avatarImg(pid){let a=S.avatars[pid];if(a===undefined||a==='loading'){try{const d=await db.doc('avatars/'+pid).get();a=d.exists?d.data().data:null}catch(_){a=null}S.avatars[pid]=a}
+  if(!a)return null;return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=a})}
+async function uploadPP(pid,file){
+  if(!file)return;toast('Envoi de la photo…');
+  try{const url=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+    const z=Math.min(img.width,img.height),N=360,c=document.createElement('canvas');c.width=c.height=N;
+    c.getContext('2d').drawImage(img,(img.width-z)/2,(img.height-z)/2,z,z,0,0,N,N);
+    const data=c.toDataURL('image/jpeg',.82);
+    await db.doc('avatars/'+pid).set({data,at:Date.now()});S.avatars[pid]=data;render();toast('Photo de profil ajoutée.');
+  }catch(e){toast(e&&e.code==='permission-denied'?'Tu ne peux changer que ta propre photo.':'Échec de l’envoi de la photo.')}
+}
+function drawCard(pid,av){
   const all=computeStats(),x=all.find(y=>y.p===pid);if(!x)return null;
   const W=600,H=840,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
   const ovr=x.avg!=null?Math.round(x.avg*10):'–';
@@ -962,10 +979,13 @@ function drawCard(pid){
   g.font='700 30px '+F;g.fillText((x.motm?'⭐ '+x.motm+' MOTM':'NOTE'),62,236);
   g.textAlign='right';g.font='700 28px '+F;g.fillText(String((S.group&&S.group.name)||'Foot à 5').toUpperCase().slice(0,22),W-56,80);
   g.font='600 24px '+F;g.fillText(x.streak.n>=3&&x.streak.t==='V'?'🔥 '+x.streak.n:'',W-56,118);
+  if(av){g.save();g.beginPath();g.arc(W-150,225,92,0,7);g.closePath();g.clip();g.drawImage(av,W-242,133,184,184);g.restore();
+    g.beginPath();g.arc(W-150,225,92,0,7);g.lineWidth=8;g.strokeStyle='rgba(255,255,255,.85)';g.stroke();g.lineWidth=3;g.strokeStyle=tier[2];g.beginPath();g.arc(W-150,225,97,0,7);g.stroke()}
+  else{
   // ballon
   g.save();g.translate(W-150,215);g.fillStyle='#fff';g.beginPath();g.arc(0,0,70,0,7);g.fill();g.strokeStyle=tier[2];g.lineWidth=4;g.stroke();
   g.fillStyle=tier[2];g.beginPath();for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;g.lineTo(Math.cos(a)*26,Math.sin(a)*26)}g.closePath();g.fill();
-  for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;g.beginPath();g.moveTo(Math.cos(a)*26,Math.sin(a)*26);g.lineTo(Math.cos(a)*62,Math.sin(a)*62);g.stroke()}g.restore();
+  for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;g.beginPath();g.moveTo(Math.cos(a)*26,Math.sin(a)*26);g.lineTo(Math.cos(a)*62,Math.sin(a)*62);g.stroke()}g.restore();}
   g.textAlign='center';let name=pname(pid,x.last).toUpperCase();let fs=78;g.font=`800 ${fs}px ${F}`;while(g.measureText(name).width>W-100&&fs>36){fs-=4;g.font=`800 ${fs}px ${F}`}
   g.fillText(name,W/2,420);g.fillRect(90,450,W-180,4);
   const L=LANG==='en';const kp=[[x.mj,L?'PLAYED':'MATCHS'],[Math.round(x.wr)+'%',L?'WIN %':'VICTOIRES'],[fmt1(x.avg),L?'AVERAGE':'MOYENNE'],[x.g,L?'GOALS':'BUTS'],[x.pd,L?'ASSISTS':'PASSES D'],[`${x.v}-${x.n}-${x.d}`,L?'W-D-L':'V-N-D']];
@@ -973,8 +993,8 @@ function drawCard(pid){
   g.font='700 22px '+F;g.globalAlpha=.6;g.fillText(L?'5-A-SIDE':'FOOT À 5',W/2,H-48);g.globalAlpha=1;
   return c;
 }
-function playerCard(pid){
-  const c=drawCard(pid);if(!c)return;const url=c.toDataURL('image/png');const nm=pname(pid).replace(/[^\w\-]+/g,'_');
+async function playerCard(pid){
+  const c=drawCard(pid,await avatarImg(pid));if(!c)return;const url=c.toDataURL('image/png');const nm=pname(pid).replace(/[^\w\-]+/g,'_');
   openModal(`<h2>Carte joueur</h2><img src="${url}" alt="Carte de ${esc(pname(pid))}" style="width:100%;border-radius:16px;display:block;margin-bottom:12px">
   <button class="btn" id="cshare" style="background:#25D366">Partager</button><a class="btn ghost" id="cdl" href="${url}" download="carte_${nm}.png" style="text-align:center;text-decoration:none">Télécharger</a><button class="btn ghost" id="cclose">Fermer</button>`);
   $m.querySelector('#cclose').onclick=closeModal;
@@ -1029,8 +1049,8 @@ function vPlayer(pid){
   const bd=badgesOf(x,all);
   const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
   const showAll=S.openCm.has('pl:'+pid);
-  return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
-  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div><p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p><button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
+  return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${(()=>{const a=avatarOf(pid);return a?`<img class="pav" src="${a}" alt="">`:''})()}${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
+  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div><p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${!S.anon&&(pid===myPid()||isGAdmin())?`<label class="upl">📷 ${avatarOf(pid)?'Changer la photo de profil':'Ajouter une photo de profil'}<input type="file" accept="image/*" data-pp="${pid}"></label>`:''}<button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
   <div class="card"><h2>Badges</h2>${bd.length?`<div class="badges">${bd.map(([i,l])=>`<span class="badge"><i>${i}</i>${l}</span>`).join('')}</div>`:'<p class="small muted" style="margin:0">Aucun badge pour l’instant.</p>'}</div>
   <div class="card"><h2>Matchs</h2><ul class="mlog">${[...x.log].reverse().map(l=>`<li data-goto="${l.m.id}"><span class="res ${l.res}">${l.res}</span><span><span class="small muted">${esc(fmtDate(l.m.date))}</span><br>${l.m.score?`${l.m.score.A} – ${l.m.score.B}`:''} ${l.g?' ⚽×'+l.g:''}${l.pd?' 🅰️×'+l.pd:''}${l.motm?' ⭐':''}</span><span class="avg" style="font:700 22px/1 -apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,'Segoe UI',Roboto,sans-serif">${fmt1(l.note)}</span></li>`).join('')}</ul></div>
   <div class="card"><h2>Commentaires reçus</h2>${coms.length?`<ol class="rank">${(showAll?coms:coms.slice(0,5)).map(o=>`<li style="grid-template-columns:1fr auto"><span class="nm" style="font-style:italic">« ${esc(o.c)} »</span><span class="nv">${esc(fmtDate(o.m.date))}</span></li>`).join('')}</ol>${coms.length>5?`<button class="cmbtn" data-cm="pl:${pid}">${showAll?'Voir moins ▲':`Voir les ${coms.length} ▼`}</button>`:''}`:'<p class="small muted" style="margin:0">Aucun.</p>'}</div>`;
@@ -1402,6 +1422,7 @@ $v.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.h2h){S.h2h[t.dataset.h2h]=t.value;t.blur();render();return}
   if(t.dataset.photo){uploadPhoto(t.dataset.photo,t.files&&t.files[0]);t.value='';return}
+  if(t.dataset.pp){uploadPP(t.dataset.pp,t.files&&t.files[0]);t.value='';return}
   if(t.dataset.rg){rgMove(t);t.blur();render();return}
   if(!t.dataset.gf)return;
   S.goalForm[t.dataset.gf]=t.value;
@@ -1481,7 +1502,7 @@ async function migrateAdmin(g,gd){
 }
 function connect(g){
   unsubs.forEach(u=>{try{u()}catch(_){}});unsubs=[];
-  Object.assign(S,{group:g,gdoc:null,me:null,claims:{},gotClaims:true,pronos:[],prDraft:null,h2h:{a:'',b:''},players:[],matches:[],votes:[],meta:null,config:{},got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,
+  S.avatars={};Object.assign(S,{group:g,gdoc:null,me:null,claims:{},gotClaims:true,pronos:[],prDraft:null,h2h:{a:'',b:''},players:[],matches:[],votes:[],meta:null,config:{},got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,
     voter:null,draft:null,voteMsg:null,playerView:null,openHist:null,photos:{},tab:'match',openCm:new Set(),
     sf:{mode:'all',n:5,from:'',to:'',players:[]},goalForm:{team:'',scorer:'',assist:''},closeForm:{sA:'',sB:'',winner:''}});
   S.setup.assign={};S.setup.nameA='';S.setup.nameB='';S.setup.newName='';
