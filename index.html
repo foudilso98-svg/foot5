@@ -341,6 +341,7 @@ body.nogroup .tabs{display:none}
 .glist{display:grid;gap:8px;margin-bottom:12px}
 .glist button{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px 14px;font:600 17px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif}
 .pav{width:44px;height:44px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:10px;border:2px solid var(--line)}
+.cmbtn.bgtog{color:rgba(255,255,255,.9);margin:6px auto 0;text-align:center;width:100%}
 .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
@@ -586,6 +587,7 @@ const EN={
 'en haut du script. Voir README.':'at the top of the script. See README.','Nom équipe A':'Team A name','Nom équipe B':'Team B name','A :':'A:','B :':'B:'
 };
 const ENRX=[
+[/^Voir les (\d+) buts ▼$/,'Show all $1 goals ▼'],
 [/^Nommer$/,'Make'],[/^Retirer les droits admin de$/,'Remove admin rights from'],
 [/^⚽ Match du (.+)$/,'⚽ Match on $1'],[/^Match du (.+)$/,'Match on $1'],[/^(.+) gagne$/,(m,a)=>tr(a)+' wins'],[/^Votes ouverts : (\d+)\/(\d+)$/,'Voting open: $1/$2'],
 [/^(\d+)\/(\d+) ont voté\. ✓ = vote reçu\.$/,'$1/$2 voted. ✓ = vote received.'],[/^\(passe : (.+)\)$/,'(assist: $1)'],[/^passe : (.+)$/,'assist: $1'],
@@ -712,10 +714,13 @@ function boardGoals(m){
   const li=g=>`<li><span class="g">${g.min?`<b>${g.min}’</b> `:''}⚽ ${g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))}${g.assist?`<small>passe : ${esc(pname(g.assist,m))}</small>`:''}</span>${S.anon?'':`<button class="x" data-act="delGoal" data-g="${g.id}" aria-label="Supprimer le but">×</button>`}</li>`;
   const lab=t=>{const n=tname(m,t);return n==='Équipe '+t?(t==='A'?'But équipe orange':'But équipe bleue'):'But '+n};
   const tb=t=>S.anon?'':`<button data-gt="${t}" class="${f.team===t?'on':''}" aria-pressed="${f.team===t}"><span class="dot ${t}"></span>${esc(lab(t))}</button>`;
-  const col=t=>{const l=gs.filter(g=>g.team===t);return `<div class="bcol ${t}">${l.length?`<ul class="bgoals">${l.map(li).join('')}</ul>`:''}${tb(t)}</div>`};
-  return `<div class="bcols">${col('A')}${col('B')}</div>`;
+  const K='bg:'+m.id,N=2,open=S.openCm.has(K),mx=Math.max(...['A','B'].map(t=>gs.filter(g=>g.team===t).length));
+  const col=t=>{let l=gs.filter(g=>g.team===t);if(!open&&l.length>N)l=l.slice(-N);return `<div class="bcol ${t}">${l.length?`<ul class="bgoals">${l.map(li).join('')}</ul>`:''}${tb(t)}</div>`};
+  const tg=mx>N?`<button class="cmbtn bgtog" data-bg="${K}">${open?'Voir moins ▲':`Voir les ${gs.length} buts ▼`}</button>`:'';
+  return `<div class="bcols">${col('A')}${col('B')}</div>${tg}`;
 }
 $b.addEventListener('click',e=>{
+  const bg=e.target.closest('[data-bg]');if(bg){const k=bg.dataset.bg;S.openCm.has(k)?S.openCm.delete(k):S.openCm.add(k);render();return}
   const gt=e.target.closest('[data-gt]');
   if(gt){const t=gt.dataset.gt;S.goalForm={team:S.goalForm.team===t?'':t,scorer:'',assist:''};render();if(S.goalForm.team)window.scrollTo({top:0,behavior:'smooth'});return}
   const d=e.target.closest('[data-act="delGoal"]');
