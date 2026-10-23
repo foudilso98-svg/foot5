@@ -1,0 +1,158 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isUser() { return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+    function gpath(g) { return /databases/$(database)/documents/groups/$(g); }
+    function mpath(g) { return /databases/$(database)/documents/groups/$(g)/members/$(request.auth.uid); }
+    function ppath(g) { return /databases/$(database)/documents/groups/$(g)/private/admin; }
+    function grp(g) { return get(gpath(g)).data; }
+    function isMember(g) {
+      return signedIn() && exists(mpath(g)) && get(mpath(g)).data.k == grp(g).k
+        && !(request.auth.uid in grp(g).get('banned', []));
+    }
+    function isOwner(g) { return isMember(g) && grp(g).get('owner', '') == request.auth.uid; }
+    // Ancien système (mot de passe admin), valable seulement avant la migration des rôles
+    function legacyAdm(g) {
+      return !('roles' in grp(g)) && get(mpath(g)).data.get('adm', '') != ''
+        && (get(mpath(g)).data.adm == grp(g).get('adminHash', '-')
+            || (exists(ppath(g)) && get(mpath(g)).data.adm == get(ppath(g)).data.hash));
+    }
+    function isAdmin(g) {
+      return isMember(g) && (grp(g).get('owner', '') == request.auth.uid
+        || request.auth.uid in grp(g).get('admins', [])
+        || legacyAdm(g));
+    }
+    // Membre avec un compte (les visiteurs sans compte sont en lecture seule)
+    function canWrite(g) { return isUser() && isMember(g); }
+    function myPlayer(g, pid) {
+      return get(/databases/$(database)/documents/groups/$(g)/players/$(pid)).data.get('uid', '') == request.auth.uid;
+    }
+    function matchOf(g, mid) { return get(/databases/$(database)/documents/groups/$(g)/matches/$(mid)).data; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Ancienne version (avant les groupes) : lecture seule
+    match /{col}/{id} {
+      allow read: if signedIn() && col in ['players', 'matches', 'votes', 'meta'];
+      allow write: if signedIn() && col == 'meta' && id == 'legacy';
+    }
+
+    // Comptes : pseudo unique -> email
+    match /usernames/{u} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /groups/{g} {
+      allow read: if isMember(g);
+      // Créer un groupe : compte obligatoire, le créateur est l'admin principal
+      allow create: if isUser() && request.resource.data.owner == request.auth.uid;
+      allow update: if
+          // le créateur gère tout sauf la propriété
+          (isOwner(g) && !changed().hasAny(['owner']))
+          // les admins nommés : nom, mot de passe… mais pas la liste des admins
+       || (isAdmin(g) && !changed().hasAny(['owner', 'admins', 'roles']))
+          // migration unique depuis l'ancien mot de passe admin
+       || (isMember(g) && legacyAdm(g) && changed().hasOnly(['admins', 'roles', 'owner', 'adminHash'])
+           && (!('owner' in resource.data) || request.resource.data.owner == resource.data.owner));
+      allow delete: if isOwner(g);
+
+      match /private/{d} {
+        allow read, write: if false;
+      }
+
+      // Membres : on rejoint en prouvant le mot de passe du groupe ; impossible de se donner l'admin
+      match /members/{uid} {
+        allow read: if isMember(g);
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.k == grp(g).k
+          && !(uid in grp(g).get('banned', []))
+          && !('adm' in request.resource.data);
+        allow update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.k == grp(g).k
+          && !(uid in grp(g).get('banned', []))
+          && request.resource.data.get('adm', '') == resource.data.get('adm', '');
+        allow delete: if (signedIn() && request.auth.uid == uid) || isAdmin(g);
+      }
+
+      // Anciens liens téléphone-joueur : lecture seule (migration)
+      match /claims/{pid} {
+        allow read: if isMember(g);
+        allow delete: if isAdmin(g);
+      }
+
+      // Votes : en son nom, pendant les votes ; suppression réservée aux admins
+      match /votes/{id} {
+        allow read: if isMember(g);
+        allow create, update: if canWrite(g) && (isAdmin(g)
+          || (myPlayer(g, request.resource.data.voter)
+              && matchOf(g, request.resource.data.matchId).status == 'voting'));
+        allow delete: if isAdmin(g);
+      }
+
+      // Paris : en son nom, avant le coup d'envoi
+      match /pronos/{id} {
+        allow read: if isMember(g);
+        allow create, update: if canWrite(g)
+          && myPlayer(g, request.resource.data.voter)
+          && matchOf(g, request.resource.data.matchId).status == 'open'
+          && matchOf(g, request.resource.data.matchId).get('timer', null) == null;
+        allow delete: if isAdmin(g) || (canWrite(g) && myPlayer(g, resource.data.voter));
+      }
+
+      // Joueurs : on ne peut lier un joueur qu'à soi-même
+      match /players/{id} {
+        allow read: if isMember(g);
+        allow create: if canWrite(g)
+          && request.resource.data.get('uid', request.auth.uid) == request.auth.uid
+          && (!('base' in request.resource.data) || isAdmin(g));
+        allow update: if canWrite(g) && (!changed().hasAny(['out', 'base']) || isAdmin(g)) && (
+             request.resource.data.get('uid', '') == resource.data.get('uid', '')
+          || (resource.data.get('uid', '') == '' && request.resource.data.get('uid', '') == request.auth.uid)
+          || (request.resource.data.get('uid', '') == '' && (resource.data.get('uid', '') == request.auth.uid || isAdmin(g))));
+        allow delete: if isAdmin(g);
+      }
+
+      // Matchs : en cours = tous les membres avec compte ; terminé = admins seulement
+      match /matches/{id} {
+        allow read: if isMember(g);
+        allow create: if canWrite(g);
+        allow update: if canWrite(g) && (
+             resource.data.status == 'open'
+          || isAdmin(g)
+          || (resource.data.status == 'voting' && request.resource.data.status == 'closed'
+              && changed().hasOnly(['status', 'results', 'motm', 'closedAt'])));
+        allow delete: if isAdmin(g) || (canWrite(g) && resource.data.status == 'open');
+      }
+
+      // Photo de profil : chacun ne met que la sienne (un admin peut seulement la retirer)
+      match /avatars/{pid} {
+        allow read: if isMember(g);
+        allow create, update: if canWrite(g) && myPlayer(g, pid);
+        allow delete: if canWrite(g) && (myPlayer(g, pid) || isAdmin(g));
+      }
+
+      // Boutique : achats en son nom (or = soi-même, moustache = un autre)
+      match /shop/{id} {
+        allow read: if isMember(g);
+        allow create: if canWrite(g) && myPlayer(g, request.resource.data.buyer)
+          && ((request.resource.data.item == 'gold' && request.resource.data.cost == 1000
+               && request.resource.data.target == request.resource.data.buyer)
+           || (request.resource.data.item == 'stache' && request.resource.data.cost == 2000
+               && request.resource.data.target != request.resource.data.buyer));
+        allow delete: if isAdmin(g);
+      }
+
+      match /meta/{id} {
+        allow read: if isMember(g);
+        allow write: if canWrite(g);
+      }
+    }
+  }
+}
