@@ -61,6 +61,7 @@ describe('paris', () => {
 describe('matchs', () => {
   const m = (over = {}) => ({ status: 'open', createdAt: now(), date: '2026-10-24', teams: { A: ['p_alice'], B: ['p_bob'] }, subs: { A: [], B: [] }, names: {}, teamNames: { A: 'A', B: 'B' }, odds: ODDS, ...over });
   it('un membre crée un match avec des cotes cohérentes', () => assertSucceeds(setDoc(doc(user('alice'), G + 'matches/new'), m())));
+  it('noms d’équipe par défaut Orange/Bleus acceptés', () => assertSucceeds(setDoc(doc(user('alice'), G + 'matches/new'), m({ teamNames: { A: 'Orange', B: 'Bleus' } }))));
   it('cotes truquées refusées', () => assertFails(setDoc(doc(user('alice'), G + 'matches/new'), m({ odds: { A: 50, N: 3.3, B: 1.05 } }))));
   it('match antidaté refusé', () => assertFails(setDoc(doc(user('alice'), G + 'matches/new'), m({ createdAt: 1000 }))));
   it('match créé déjà terminé refusé', () => assertFails(setDoc(doc(user('alice'), G + 'matches/new'), m({ status: 'closed' }))));

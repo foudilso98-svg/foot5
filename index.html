@@ -697,7 +697,7 @@ function parts(m){return [...m.teams.A,...(m.subs.A||[]),...m.teams.B,...(m.subs
 function teamOf(m,p){return (m.teams.A.includes(p)||(m.subs.A||[]).includes(p))?'A':'B'}
 function isSub(m,p){return (m.subs.A||[]).includes(p)||(m.subs.B||[]).includes(p)}
 function pname(p,m){const pl=S.players.find(x=>x.id===p);const n=pl?pl.name:((m&&m.names&&m.names[p])||'?');return S.fx?n+(fxOn('crown',p)?' 👑':'')+(fxOn('stache',p)?' 🥸':''):n}
-function tname(m,t){return (m.teamNames&&m.teamNames[t])||('Équipe '+t)}
+function tname(m,t){const n=m&&m.teamNames&&m.teamNames[t];return !n||n==='Équipe '+t?(t==='A'?'Orange':'Bleus'):n}
 function elapsed(m){const t=m&&m.timer;if(!t)return 0;return (t.acc||0)+(t.start?Math.max(0,Date.now()-t.start):0)}
 function fmtClock(ms){const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 setInterval(()=>{const m=cur();if(!m||!m.timer||!m.timer.start)return;const t=fmtClock(elapsed(m));document.querySelectorAll('[data-clock]').forEach(el=>el.textContent=t)},1000);
@@ -865,7 +865,7 @@ const ENRX=[
 ];
 const ENTH={'Joueur':'Player','MJ':'P','V':'W','N':'D','D':'L','%V':'W%','Moy.':'Avg','Buts':'Goals','PD':'A','MOTM':'MOTM'};
 const ENRES={'V':'W','N':'D','D':'L'};
-Object.assign(EN,{'Moi':'Me','Ma fiche':'My profile','Ma carte':'My card','Réglages':'Settings','Mon solde':'My balance','Ouvrir la boutique':'Open the shop','Gérer mon compte':'Manage my account','Mes stats tous groupes':'My stats, all groups','Voter maintenant':'Vote now','Face à face':'Head to head','Classement complet':'Full table','← Retour':'← Back','Classement Ballons d’or':'Golden balls ranking','Mon compte':'My account','Compte, langue et thème : onglet Moi.':'Account, language and theme: Me tab.','Créer mon compte':'Create my account','J’ai déjà un compte':'I already have an account','Classements':'Leaderboards','Buteurs':'Scorers','Passeurs':'Assists','Notes':'Ratings','Meilleur buteur':'Top scorer','Meilleur passeur':'Top assists','Meilleure moyenne':'Best average','Homme du match':'Man of the match','buts':'goals','passes':'assists','Ballons d’or':'Golden balls','Fiche joueur':'Player profile'});
+Object.assign(EN,{'Bleus':'Blues','But Orange':'Orange goal','But Bleus':'Blues goal','Orange gagne':'Orange wins','Bleus gagne':'Blues win','Moi':'Me','Ma fiche':'My profile','Ma carte':'My card','Réglages':'Settings','Mon solde':'My balance','Ouvrir la boutique':'Open the shop','Gérer mon compte':'Manage my account','Mes stats tous groupes':'My stats, all groups','Voter maintenant':'Vote now','Face à face':'Head to head','Classement complet':'Full table','← Retour':'← Back','Classement Ballons d’or':'Golden balls ranking','Mon compte':'My account','Compte, langue et thème : onglet Moi.':'Account, language and theme: Me tab.','Créer mon compte':'Create my account','J’ai déjà un compte':'I already have an account','Classements':'Leaderboards','Buteurs':'Scorers','Passeurs':'Assists','Notes':'Ratings','Meilleur buteur':'Top scorer','Meilleur passeur':'Top assists','Meilleure moyenne':'Best average','Homme du match':'Man of the match','buts':'goals','passes':'assists','Ballons d’or':'Golden balls','Fiche joueur':'Player profile'});
 function tr(x,th){
   if(LANG!=='en'||x==null)return x;x=String(x);
   const m=x.match(/^(\s*)([\s\S]*?)(\s*)$/),c=m[2];if(!c)return x;
@@ -979,7 +979,7 @@ function renderBoard(){
 function boardGoals(m){
   const gs=goalsOf(m),f=S.goalForm;
   const li=g=>`<li><span class="g">${g.min?`<b>${g.min}’</b> `:''}⚽ ${g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))}${g.assist?`<small>passe : ${esc(pname(g.assist,m))}</small>`:''}</span>${S.anon?'':`<button class="x" data-act="delGoal" data-g="${g.id}" aria-label="Supprimer le but">×</button>`}</li>`;
-  const lab=t=>{const n=tname(m,t);return n==='Équipe '+t?(t==='A'?'But équipe orange':'But équipe bleue'):'But '+n};
+  const lab=t=>'But '+tname(m,t);
   const tb=t=>S.anon?'':`<button data-gt="${t}" class="${f.team===t?'on':''}" aria-pressed="${f.team===t}"><span class="dot ${t}"></span>${esc(lab(t))}</button>`;
   const K='bg:'+m.id,N=2,open=S.openCm.has(K),mx=Math.max(...['A','B'].map(t=>gs.filter(g=>g.team===t).length));
   const col=t=>{let l=gs.filter(g=>g.team===t);if(!open&&l.length>N)l=l.slice(-N);return `<div class="bcol ${t}">${l.length?`<ul class="bgoals">${l.map(li).join('')}</ul>`:''}${tb(t)}</div>`};
@@ -1091,7 +1091,7 @@ function vSetup(){
   const rows=pool.map(p=>`<div class="prow"><span class="pn"><button class="plink" data-card="${p.id}">${esc(p.name)}</button>${nt(p.id)!=null?` <small class="pnote">${fmt1(nt(p.id))}</small>`:''}${p.uid?'':' <small class="gtag">invité</small>'}</span><div class="seg4">${['A','B','sA','sB'].map(k=>`<button data-assign="${k}" data-p="${p.id}" class="${a[p.id]===k?'on '+k:''}" aria-pressed="${a[p.id]===k}">${lab[k]}</button>`).join('')}</div>${p.uid&&!isGAdmin()?'<span class="xsp"></span>':p.uid?`<button class="x" data-act="kickP" data-p="${p.id}" aria-label="Exclure">×</button>`:`<button class="x" data-act="delPlayer" data-p="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button>`}</div>`).join('');
   return `<div class="card"><h2>Nouveau match</h2>
   <label class="fld">Date<input type="date" data-s="date" value="${esc(S.setup.date)}"></label>
-  <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" placeholder="Équipe A" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" placeholder="Équipe B" value="${esc(S.setup.nameB)}"></label></div></div>
+  <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" placeholder="Orange" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" placeholder="Bleus" value="${esc(S.setup.nameB)}"></label></div></div>
   <div class="card"><h2>Joueurs</h2>
   <div class="addrow"><input id="newName" placeholder="Nom de l’invité" maxlength="30" value="${esc(S.setup.newName)}" autocomplete="off"><button class="btn inline" data-act="addPlayer">+ Invité</button></div>
   <div class="counts"><span class="${nA>=1?'ok':''}"><span class="dot A"></span> A : <b>${nA}</b>${tav('A')}${c('sA')?' +'+c('sA')+' remp.':''}</span><span class="${nB>=1?'ok':''}"><span class="dot B"></span> B : <b>${nB}</b>${tav('B')}${c('sB')?' +'+c('sB')+' remp.':''}</span></div>
@@ -1707,7 +1707,7 @@ async function createMatch(){
   const mid=rid('m'),all=[...g('A'),...g('sA'),...g('B'),...g('sB')];
   const names={};
   for(const p of all)names[p]=pname(p);
-  const m={createdAt:Date.now(),date:S.setup.date||todayISO(),teamNames:{A:S.setup.nameA.trim()||'Équipe A',B:S.setup.nameB.trim()||'Équipe B'},
+  const m={createdAt:Date.now(),date:S.setup.date||todayISO(),teamNames:{A:S.setup.nameA.trim()||'Orange',B:S.setup.nameB.trim()||'Bleus'},
     teams:{A:g('A'),B:g('B')},subs:{A:g('sA'),B:g('sB')},names,status:'open'};m.odds=computeOdds(m.teams,m.subs);
   try{
     await db.doc('matches/'+mid).set(m);
