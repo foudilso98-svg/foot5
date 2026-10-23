@@ -373,6 +373,7 @@ body.nogroup .tabs{display:none}
 .nextc .row .btn{margin:0}
 .btn.podbtn{background:linear-gradient(90deg,#E0A800,#F5C542);color:#3A2A00}
 .pnote{display:inline-block;min-width:30px;text-align:center;font-size:12px;font-weight:700;padding:1px 6px;border-radius:6px;background:rgba(52,199,89,.16);color:#1f8a4c;margin-left:4px;vertical-align:1px}
+.hst{white-space:nowrap;font-weight:600;color:var(--ink,inherit)}
 .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
@@ -509,7 +510,7 @@ function cur(){const id=S.meta&&S.meta.currentMatchId;return id?S.matches.find(m
 function parts(m){return [...m.teams.A,...(m.subs.A||[]),...m.teams.B,...(m.subs.B||[])]}
 function teamOf(m,p){return (m.teams.A.includes(p)||(m.subs.A||[]).includes(p))?'A':'B'}
 function isSub(m,p){return (m.subs.A||[]).includes(p)||(m.subs.B||[]).includes(p)}
-function pname(p,m){const pl=S.players.find(x=>x.id===p);const n=pl?pl.name:((m&&m.names&&m.names[p])||'?');return S.fx&&fxOn('stache',p)?n+' 🥸':n}
+function pname(p,m){const pl=S.players.find(x=>x.id===p);const n=pl?pl.name:((m&&m.names&&m.names[p])||'?');return S.fx?n+(fxOn('crown',p)?' 👑':'')+(fxOn('stache',p)?' 🥸':''):n}
 function tname(m,t){return (m.teamNames&&m.teamNames[t])||('Équipe '+t)}
 function elapsed(m){const t=m&&m.timer;if(!t)return 0;return (t.acc||0)+(t.start?Math.max(0,Date.now()-t.start):0)}
 function fmtClock(ms){const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
@@ -528,6 +529,7 @@ const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k
 let LANG=(()=>{try{const l=localStorage.getItem('foot5_lang');if(l==='fr'||l==='en')return l}catch(e){}return /^fr/i.test(navigator.language||'fr')?'fr':'en'})();
 document.documentElement.lang=LANG;
 const EN={
+'👑 Couronne':'👑 Crown','👑 Tu portes la couronne.':'👑 You wear the crown.','Remettre à zéro':'Reset','Soldes remis à 100 🏆.':'Balances reset to 100 🏆.',
 '📥 Notes de départ':'📥 Starting ratings','— Ignorer —':'— Skip —','+ Créer comme invité':'+ Create as guest','à vérifier':'check','Importer':'Import',
 'Notes du premier sondage, converties sur 10. Chaque note compte comme 1 match, puis les notes des matchs prennent le relais. Vérifie qui est qui.':'Ratings from the first survey, converted to /10. Each counts as 1 match, then match ratings take over. Check who is who.',
 'Un joueur est choisi deux fois.':'A player is selected twice.','Notes de départ importées.':'Starting ratings imported.','Note de départ :':'Starting rating:','(compte comme 1 match)':'(counts as 1 match)',
@@ -641,6 +643,9 @@ const EN={
 'en haut du script. Voir README.':'at the top of the script. See README.','Nom équipe A':'Team A name','Nom équipe B':'Team B name','A :':'A:','B :':'B:'
 };
 const ENRX=[
+[/^🔄 Remettre les soldes à (\d+) 🏆$/,'🔄 Reset balances to $1 🏆'],[/^👑 Couronne · encore (\d+) j$/,'👑 Crown · $1 days left'],
+[/^Une couronne à côté de ton nom pendant 7 jours\.(?: Active encore (\d+) j\.)?$/,'A crown next to your name for 7 days.'],
+[/^Par match : \+(\d+) 🏆 joué, \+(\d+) victoire, \+(\d+) MVP\. Gagne des paris pour en avoir plus\.$/,'Per match: +$1 🏆 played, +$2 win, +$3 MVP. Win bets to get more.'],
 [/^Spectateur · (.+)$/,'Spectator · $1'],[/^Exclure $/,'Remove '],[/^ du groupe \? Il ne pourra plus voir ni rejoindre le groupe\. Ses stats restent\.$/,' from the group? They won’t be able to see or rejoin. Their stats stay.'],
 [/^ · encore (\d+) j$/,' · $1 days left'],[/^✨ Nom en or · encore (\d+) j$/,'✨ Gold name · $1 days left'],[/^ Actif encore (\d+) j\.$/,' Active for $1 more days.'],
 [/^Ton nom en or partout pendant 7 jours\. Actif encore (\d+) j\.$/,'Your name in gold everywhere for 7 days. Active for $1 more days.'],
@@ -1002,8 +1007,13 @@ function computeOdds(teams,subs){
 function oddsOf(m){return m.odds||computeOdds(m.teams,m.subs)}
 const fmtOdd=n=>LANG==='en'?n.toFixed(2):n.toFixed(2).replace('.',',');
 function pronosOf(mid){return (S.pronos||[]).filter(x=>x.matchId===mid&&x.pick&&x.stake>0)}
-const BO_START=100,BO_MATCH=50,SHOP={gold:{cost:1000,days:7},stache:{cost:2000,days:7}};
-function shopFx(){const fx={gold:{},stache:{}},DAY=864e5;
+const BO_START=100,BO_MATCH=50,BO_WIN=50,BO_MVP=100,SHOP={gold:{cost:1000,days:7},crown:{cost:1500,days:7},stache:{cost:2000,days:7}};
+function boReset(){return (S.gdoc&&S.gdoc.boReset)||0}
+function mWin(m){const sc=m.score||{A:0,B:0};return m.winner||(sc.A>sc.B?'A':sc.B>sc.A?'B':'N')}
+function matchGain(m,pid){if(!parts(m).includes(pid))return null;const r={play:BO_MATCH,win:0,mvp:0};
+  const w=mWin(m);if(w!=='N'&&teamOf(m,pid)===w)r.win=BO_WIN;if(m.status==='closed'&&(m.motm||[]).includes(pid))r.mvp=BO_MVP;return r}
+const afterReset=m=>(m.createdAt||0)>boReset();
+function shopFx(){const fx={gold:{},stache:{},crown:{}},DAY=864e5;
   (S.shop||[]).slice().sort((a,b)=>a.at-b.at).forEach(x=>{const it=SHOP[x.item];if(!it)return;const t=fx[x.item],cur=t[x.target];
     const start=cur&&cur.end>x.at?cur.end:x.at;t[x.target]={end:start+it.days*DAY,by:x.buyer}});
   return fx}
@@ -1011,22 +1021,23 @@ function fxOn(item,pid){const e=S.fx&&S.fx[item][pid];return e&&e.end>Date.now()
 function goldify(root){
   const names=new Set(S.players.filter(p=>fxOn('gold',p.id)).map(p=>p.name));if(!names.size||!root)return;
   root.querySelectorAll('span,b,button,li,div,a,td,strong,option').forEach(el=>{if(el.childNodes.length!==1||el.firstChild.nodeType!==3||el.closest('.chips,.seg,.sorts,.pick,select'))return;
-    const t=el.firstChild.nodeValue.replace(/ 🥸$/,'').trim();if(names.has(t))el.classList.add('gold')});
+    const t=el.firstChild.nodeValue.replace(/( 👑| 🥸)+$/,'').trim();if(names.has(t))el.classList.add('gold')});
 }
 function shopModal(target){
   const me=myPid();if(!me){if(S.anon)needAccount();return}
   const bal=balanceOf(me),vis=S.players.filter(p=>(p.uid||p.guest)&&!p.out&&p.id!==me).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
   const g=fxOn('gold',me),left=e=>Math.ceil((e.end-Date.now())/864e5);
   const buy=(item,t)=>{const it=SHOP[item];if(bal<it.cost){toast(tr('Pas assez de Ballons d’or.'));return}
-    confirmBox(item==='gold'?`Mettre ton nom en or pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`:`Mettre une moustache 🥸 à <b>${esc(pname(t))}</b> pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`,tr('Acheter'),async()=>{
-      try{await db.doc('shop/'+rid('s')).set({buyer:me,target:t,item,cost:it.cost,at:Date.now()});toast(item==='gold'?tr('✨ Ton nom brille en or.'):'🥸 '+pname(t).replace(/ 🥸$/,'')+(LANG==='en'?' got a moustache.':' a une moustache.'))}catch(e){toast(errMsg(e))}})};
+    confirmBox(item==='gold'?`Mettre ton nom en or pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`:item==='crown'?`Porter la couronne 👑 pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`:`Mettre une moustache 🥸 à <b>${esc(pname(t))}</b> pendant ${it.days} jours pour <b>${it.cost} 🏆</b> ?`,tr('Acheter'),async()=>{
+      try{await db.doc('shop/'+rid('s')).set({buyer:me,target:t,item,cost:it.cost,at:Date.now()});toast(item==='gold'?tr('✨ Ton nom brille en or.'):item==='crown'?tr('👑 Tu portes la couronne.'):'🥸 '+pname(t).replace(/( 👑| 🥸)+$/,'')+(LANG==='en'?' got a moustache.':' a une moustache.'))}catch(e){toast(errMsg(e))}})};
   const step1=()=>{openModal(`<h2>🛒 Boutique</h2><p style="margin:0 0 14px">Solde : <b>${boFmt(bal)}</b></p>
     <div class="shopit"><div><b class="gold">✨ Nom en or</b><small>Ton nom en or partout pendant ${SHOP.gold.days} jours.${g?` Actif encore ${left(g)} j.`:''}</small></div><button class="btn inline" id="bgold" ${bal<SHOP.gold.cost?'disabled':''}>${SHOP.gold.cost} 🏆</button></div>
+    <div class="shopit"><div><b>👑 Couronne</b><small>Une couronne à côté de ton nom pendant ${SHOP.crown.days} jours.${fxOn('crown',me)?` Active encore ${left(fxOn('crown',me))} j.`:''}</small></div><button class="btn inline" id="bcrown" ${bal<SHOP.crown.cost?'disabled':''}>${SHOP.crown.cost} 🏆</button></div>
     <div class="shopit"><div><b>🥸 Moustache</b><small>Sur le nom d’un pote pendant ${SHOP.stache.days} jours. Tout le monde la verra.</small></div><button class="btn inline" id="bstache" ${bal<SHOP.stache.cost?'disabled':''}>${SHOP.stache.cost} 🏆</button></div>
-    <p class="small muted" style="margin:4px 0 12px">+${BO_MATCH} 🏆 par match joué. Gagne des paris pour en avoir plus.</p>
+    <p class="small muted" style="margin:4px 0 12px">Par match : +${BO_MATCH} 🏆 joué, +${BO_WIN} victoire, +${BO_MVP} MVP. Gagne des paris pour en avoir plus.</p>
     <button class="btn ghost" id="shx">Fermer</button>`);
     $m.querySelector('#shx').onclick=closeModal;
-    $m.querySelector('#bgold').onclick=()=>buy('gold',me);
+    $m.querySelector('#bgold').onclick=()=>buy('gold',me);$m.querySelector('#bcrown').onclick=()=>buy('crown',me);
     $m.querySelector('#bstache').onclick=()=>{if(bal<SHOP.stache.cost){toast(tr('Pas assez de Ballons d’or.'));return}step2()}};
   const step2=()=>{openModal(`<h2>🥸 Qui sera moustachu ?</h2><div class="pick gpick" style="margin-bottom:12px">${vis.map(p=>`<button data-vic="${p.id}">${esc(pname(p.id))}</button>`).join('')}</div><button class="btn ghost" id="shb">← Retour</button>`);
     $m.classList.add('mid');$m.querySelector('#shb').onclick=step1;goldify($m);
@@ -1039,17 +1050,17 @@ function betResult(m,x){if(!m.score||(m.status!=='voting'&&m.status!=='closed'))
   const od=(m.odds||oddsOf(m))[x.pick];return o===x.pick?Math.round(x.stake*(od-1)):-x.stake}
 function balanceOf(pid,exceptMid){
   let b=BO_START;
-  for(const m of finished()){if(parts(m).includes(pid))b+=BO_MATCH}
-  for(const x of (S.shop||[]))if(x.buyer===pid)b-=x.cost||0;
-  for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0)||x.matchId===exceptMid)continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m)continue;
+  for(const m of finished()){if(!afterReset(m))continue;const g=matchGain(m,pid);if(g)b+=g.play+g.win+g.mvp}
+  for(const x of (S.shop||[]))if(x.buyer===pid&&(x.at||0)>boReset())b-=x.cost||0;
+  for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0)||x.matchId===exceptMid)continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m||!afterReset(m))continue;
     const r=betResult(m,x);b+=r==null?-x.stake:r}
   return Math.max(0,b);
 }
 function balanceDetail(pid){
-  const d={start:BO_START,nm:0,won:0,lost:0,pend:0,shop:0};
-  for(const m of finished())if(parts(m).includes(pid))d.nm++;
-  for(const x of (S.shop||[]))if(x.buyer===pid)d.shop+=x.cost||0;
-  for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0))continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m)continue;
+  const d={start:BO_START,nm:0,nw:0,nv:0,won:0,lost:0,pend:0,shop:0};
+  for(const m of finished()){if(!afterReset(m))continue;const g=matchGain(m,pid);if(g){d.nm++;if(g.win)d.nw++;if(g.mvp)d.nv++}}
+  for(const x of (S.shop||[]))if(x.buyer===pid&&(x.at||0)>boReset())d.shop+=x.cost||0;
+  for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0))continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m||!afterReset(m))continue;
     const r=betResult(m,x);if(r==null)d.pend+=x.stake;else if(r>0)d.won+=r;else d.lost+=-r}
   return d;
 }
@@ -1075,7 +1086,7 @@ function pronoCard(m){
     return `<li><span class="nm">${esc(pname(x.voter,m))}</span><span class="ps">${x.pick==='N'?'Nul':esc(tname(m,x.pick))} · ${x.stake}</span>${r!=null?`<span class="pts ${r>0?'ok':''}">${r>0?'+':''}${r}</span>`:''}</li>`}).join('');
   return `<div class="card prono"><h2>🏆 Paris</h2><div class="small muted" style="margin:-6px 0 8px">Cotes selon les notes des joueurs${lock&&m.status==='open'?' · fermés au coup d’envoi':''}</div><div class="odds">${tile('A')}${tile('N')}${tile('B')}</div>${me}
   ${rows?`<ul class="prlist">${rows}</ul>`:(lock?'<p class="small muted" style="margin:10px 0 0">Aucun pari.</p>':'')}
-  <p class="small muted" style="margin:10px 0 0">Départ : ${BO_START} 🏆 Ballons d’or. +${BO_MATCH} par match joué. Gagné = mise × cote.</p></div>`;
+  <p class="small muted" style="margin:10px 0 0">Départ : ${BO_START} 🏆 Ballons d’or. Par match : +${BO_MATCH} joué, +${BO_WIN} victoire, +${BO_MVP} MVP. Pari gagné = mise × cote.</p></div>`;
 }
 async function savePr(){
   const m=cur(),me=myPid(),d=S.prDraft;if(!m||!me||!d||!d.pick||pronoLocked(m))return;
@@ -1287,8 +1298,8 @@ function vPlayer(pid){
   const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
   const showAll=S.openCm.has('pl:'+pid);
   return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${(()=>{const a=avatarOf(pid);return a?`<img class="pav" src="${a}" alt="">`:''})()}${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
-  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div>${baseOf(pid)!=null?`<p class="small muted" style="margin:10px 0 0">Note de départ : <b>${fmt1(baseOf(pid))}</b> (compte comme 1 match)</p>`:''}<p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${(()=>{const d=balanceDetail(pid);return `<p class="small muted" style="margin:4px 0 0">${BO_START} au départ · +${d.nm*BO_MATCH} (${d.nm} match${d.nm>1?'s':''} joué${d.nm>1?'s':''})${d.won?` · +${d.won} paris gagnés`:''}${d.lost?` · −${d.lost} paris perdus`:''}${d.pend?` · −${d.pend} pari en cours`:''}${d.shop?` · −${d.shop} boutique`:''}</p>`})()}${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
-    return (st?`<p class="small" style="margin:6px 0 0">🥸 Moustache offerte par <b>${esc(pname(st.by))}</b> · encore ${d(st)} j</p>`:'')+(go?`<p class="small" style="margin:6px 0 0">✨ Nom en or · encore ${d(go)} j</p>`:'')})()}
+  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div>${baseOf(pid)!=null?`<p class="small muted" style="margin:10px 0 0">Note de départ : <b>${fmt1(baseOf(pid))}</b> (compte comme 1 match)</p>`:''}<p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${(()=>{const d=balanceDetail(pid);return `<p class="small muted" style="margin:4px 0 0">${BO_START} au départ · +${d.nm*BO_MATCH} (${d.nm} match${d.nm>1?'s':''} joué${d.nm>1?'s':''})${d.nw?` · +${d.nw*BO_WIN} (${d.nw} victoire${d.nw>1?'s':''})`:''}${d.nv?` · +${d.nv*BO_MVP} (${d.nv}× MVP)`:''}${d.won?` · +${d.won} paris gagnés`:''}${d.lost?` · −${d.lost} paris perdus`:''}${d.pend?` · −${d.pend} pari en cours`:''}${d.shop?` · −${d.shop} boutique`:''}</p>`})()}${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
+    return (st?`<p class="small" style="margin:6px 0 0">🥸 Moustache offerte par <b>${esc(pname(st.by))}</b> · encore ${d(st)} j</p>`:'')+(go?`<p class="small" style="margin:6px 0 0">✨ Nom en or · encore ${d(go)} j</p>`:'')+(fxOn('crown',pid)?`<p class="small" style="margin:6px 0 0">👑 Couronne · encore ${d(fxOn('crown',pid))} j</p>`:'')})()}
   ${myPid()?(pid===myPid()?'<button class="btn ghost" data-act="shop" style="margin:12px 0 0">🛒 Boutique</button>':`<button class="btn ghost" data-act="shop" data-p="${pid}" style="margin:12px 0 0">🥸 Moustache · ${SHOP.stache.cost} 🏆</button>`):''}${!S.anon&&(pid===myPid()||isGAdmin())?`<label class="upl">📷 ${avatarOf(pid)?'Changer la photo de profil':'Ajouter une photo de profil'}<input type="file" accept="image/*" data-pp="${pid}"></label>`:''}<button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
   <div class="card"><h2>Badges</h2>${bd.length?`<div class="badges">${bd.map(([i,l])=>`<span class="badge"><i>${i}</i>${l}</span>`).join('')}</div>`:'<p class="small muted" style="margin:0">Aucun badge pour l’instant.</p>'}</div>
   <div class="card"><h2>Matchs</h2><ul class="mlog">${[...x.log].reverse().map(l=>`<li data-goto="${l.m.id}"><span class="res ${l.res}">${l.res}</span><span><span class="small muted">${esc(fmtDate(l.m.date))}</span><br>${l.m.score?`${l.m.score.A} – ${l.m.score.B}`:''} ${l.g?' ⚽×'+l.g:''}${l.pd?' 🅰️×'+l.pd:''}${l.motm?' ⭐':''}</span><span class="avg" style="font:700 22px/1 -apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,'Segoe UI',Roboto,sans-serif">${fmt1(l.note)}</span></li>`).join('')}</ul></div>
@@ -1369,12 +1380,14 @@ function vHist(){
   const ms=closedMatches();
   if(!ms.length)return '<div class="empty"><p>Aucun match clôturé.</p></div>';
   return ms.map(m=>{
-    const names=t=>[...m.teams[t],...(m.subs[t]||[])].map(p=>esc(pname(p,m))).join(', ');
+    const gs=goalsOf(m),nb=p=>gs.filter(g=>g.scorer===p).length,na=p=>gs.filter(g=>g.assist===p).length;
+    const names=t=>[...m.teams[t],...(m.subs[t]||[])].map(p=>{const g=nb(p),a=na(p);return esc(pname(p,m))+(g||a?` <span class="hst">${g?`⚽×${g}`:''}${g&&a?' ':''}${a?`🅰️×${a}`:''}</span>`:'')}).join(', ');
+    const csc=t=>gs.filter(g=>g.scorer==='csc'&&g.team===t).length;
     const open=S.openHist===m.id;
     return `<button class="hitem" data-hist="${m.id}" aria-expanded="${open}"><div class="d">${esc(fmtDate(m.date))}</div>
     <div class="l"><span class="dot A"></span><span class="${m.winner==='A'?'w':''}">${esc(tname(m,'A'))}</span><span class="s">${m.score.A} – ${m.score.B}</span><span class="${m.winner==='B'?'w':''}">${esc(tname(m,'B'))}</span><span class="dot B"></span></div>
     <div class="ps">A : ${names('A')}<br>B : ${names('B')}</div>
-    ${goalsOf(m).length?`<div class="ps" style="margin-top:4px">Buts : ${goalsOf(m).map(g=>g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))).join(', ')}</div>`:''}
+    ${csc('A')||csc('B')?`<div class="ps" style="margin-top:4px">CSC : ${csc('A')?`${esc(tname(m,'A'))} ×${csc('A')}`:''}${csc('A')&&csc('B')?', ':''}${csc('B')?`${esc(tname(m,'B'))} ×${csc('B')}`:''}</div>`:''}
     <div class="m">MOTM : <b>${(m.motm||[]).length?m.motm.map(p=>esc(pname(p,m))).join(' & '):'–'}</b></div></button>
     ${open?`<div class="hdetail">${motmCard(m)}${podiumBtn(m)}${shareBtn(m)}${photoBlock(m)}${pronosOf(m.id).length?pronoCard(m):''}${rankCard(m)}${isGAdmin()?`<button class="btn danger" data-act="delMatch" data-m="${m.id}">🔒 Supprimer ce match</button>`:''}</div>`:''}`;
   }).join('');
@@ -1878,7 +1891,7 @@ function adminsBlock(){
   const ad=(g.admins||[]).map(nm).filter(Boolean);
   let h=`<p class="small muted" style="margin:0 0 12px">Admin principal : <b>${esc(nm(g.owner)||tr('le créateur'))}</b>${ad.length?`<br>Autres admins : <b>${esc(ad.join(', '))}</b>`:''}</p>`;
   if(isGOwner())h+='<button class="btn ghost" id="gadmins">👑 Gérer les admins</button>';
-  if(isGAdmin())h+='<button class="btn ghost" id="gmembers">👥 Gérer les membres</button><button class="btn ghost" id="gseed">📥 Notes de départ</button>';
+  if(isGAdmin())h+='<button class="btn ghost" id="gmembers">👥 Gérer les membres</button><button class="btn ghost" id="gseed">📥 Notes de départ</button><button class="btn ghost" id="gboreset">🔄 Remettre les soldes à ${BO_START} 🏆</button>';
   return h;
 }
 function canExclude(uid){const g=S.gdoc||{};if(!uid||uid===S.uid||uid===g.owner)return false;if((g.admins||[]).includes(uid)&&!isGOwner())return false;return true}
@@ -2102,7 +2115,7 @@ function groupMenu(){
   const on=(id,f)=>{const b=$m.querySelector('#'+id);if(b)b.onclick=f};
   $m.querySelectorAll('[data-gsw]').forEach(b=>b.onclick=()=>switchGroup(b.dataset.gsw));
   on('gclose',closeModal);on('gjoin',gJoin);on('gnew',gCreate);
-  on('gadmins',adminsModal);on('gmembers',membersModal);on('gseed',seedModal);
+  on('gadmins',adminsModal);on('gmembers',membersModal);on('gseed',seedModal);on('gboreset',()=>confirmBox(`Remettre le solde de tout le monde à <b>${BO_START} 🏆</b> ? Les matchs, paris et achats d’avant ne compteront plus. Les effets de boutique en cours restent actifs.`,tr('Remettre à zéro'),async()=>{try{await raw.doc('groups/'+S.group.id).update({boReset:Date.now()});toast(tr('Soldes remis à 100 🏆.'))}catch(e){toast(errMsg(e))}},'RESET'));
   on('gshare',()=>{const t=trLines(`⚽ Rejoins le groupe « ${g.name} » pour noter nos matchs de foot à 5 :\n${joinLink()}`);
     if(navigator.share){navigator.share({text:t}).catch(()=>{});return}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')});
   on('gcopy',async()=>{try{await navigator.clipboard.writeText(joinLink());toast('Lien copié.')}catch(e){prompt(tr('Copie ce lien :'),joinLink())}});
