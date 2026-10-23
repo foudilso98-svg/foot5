@@ -372,6 +372,7 @@ body.nogroup .tabs{display:none}
 .nextc .n{font-size:22px;font-weight:700;margin:4px 0 2px;text-transform:capitalize}
 .nextc .row .btn{margin:0}
 .btn.podbtn{background:linear-gradient(90deg,#E0A800,#F5C542);color:#3A2A00}
+.pnote{display:inline-block;min-width:30px;text-align:center;font-size:12px;font-weight:700;padding:1px 6px;border-radius:6px;background:rgba(52,199,89,.16);color:#1f8a4c;margin-left:4px;vertical-align:1px}
 .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
@@ -882,13 +883,15 @@ function vSetup(){
   const nA=c('A'),nB=c('B'),ok=nA===5&&nB===5;
   const pool=S.players.filter(p=>((p.uid||p.guest)&&!p.out)||a[p.id]).sort((x,y)=>(!!y.uid-!!x.uid)||x.name.localeCompare(y.name,'fr'));
   const lab={A:'A',B:'B',sA:'Rem. A',sB:'Rem. B'};
-  const rows=pool.map(p=>`<div class="prow"><span class="pn">${esc(p.name)}${p.uid?'':' <small class="gtag">invité</small>'}</span><div class="seg4">${['A','B','sA','sB'].map(k=>`<button data-assign="${k}" data-p="${p.id}" class="${a[p.id]===k?'on '+k:''}" aria-pressed="${a[p.id]===k}">${lab[k]}</button>`).join('')}</div>${p.uid&&!isGAdmin()?'<span class="xsp"></span>':p.uid?`<button class="x" data-act="kickP" data-p="${p.id}" aria-label="Exclure">×</button>`:`<button class="x" data-act="delPlayer" data-p="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button>`}</div>`).join('');
+  const stv={};computeStats().forEach(x=>{if(x.avg!=null)stv[x.p]=x.avg});const nt=p=>stv[p]??baseOf(p);
+  const tav=t=>{const l=Object.keys(a).filter(p=>a[p]===t).map(nt).filter(v=>v!=null);return l.length?' · '+fmt1(l.reduce((x,y)=>x+y,0)/l.length):''};
+  const rows=pool.map(p=>`<div class="prow"><span class="pn">${esc(p.name)}${nt(p.id)!=null?` <small class="pnote">${fmt1(nt(p.id))}</small>`:''}${p.uid?'':' <small class="gtag">invité</small>'}</span><div class="seg4">${['A','B','sA','sB'].map(k=>`<button data-assign="${k}" data-p="${p.id}" class="${a[p.id]===k?'on '+k:''}" aria-pressed="${a[p.id]===k}">${lab[k]}</button>`).join('')}</div>${p.uid&&!isGAdmin()?'<span class="xsp"></span>':p.uid?`<button class="x" data-act="kickP" data-p="${p.id}" aria-label="Exclure">×</button>`:`<button class="x" data-act="delPlayer" data-p="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button>`}</div>`).join('');
   return `<div class="card"><h2>Nouveau match</h2>
   <label class="fld">Date<input type="date" data-s="date" value="${esc(S.setup.date)}"></label>
   <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" placeholder="Équipe A" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" placeholder="Équipe B" value="${esc(S.setup.nameB)}"></label></div></div>
   <div class="card"><h2>Joueurs</h2>
   <div class="addrow"><input id="newName" placeholder="Nom de l’invité" maxlength="30" value="${esc(S.setup.newName)}" autocomplete="off"><button class="btn inline" data-act="addPlayer">+ Invité</button></div>
-  <div class="counts"><span class="${nA===5?'ok':''}"><span class="dot A"></span> A : <b>${nA}/5</b>${c('sA')?' +'+c('sA')+' remp.':''}</span><span class="${nB===5?'ok':''}"><span class="dot B"></span> B : <b>${nB}/5</b>${c('sB')?' +'+c('sB')+' remp.':''}</span></div>
+  <div class="counts"><span class="${nA===5?'ok':''}"><span class="dot A"></span> A : <b>${nA}/5</b>${tav('A')}${c('sA')?' +'+c('sA')+' remp.':''}</span><span class="${nB===5?'ok':''}"><span class="dot B"></span> B : <b>${nB}/5</b>${tav('B')}${c('sB')?' +'+c('sB')+' remp.':''}</span></div>
   ${rows||'<p class="muted small">Les joueurs qui ont un compte apparaissent ici automatiquement. Ajoute les autres comme invités.</p>'}</div>
   ${closedMatches().length&&!ids.length?'<button class="btn ghost" data-act="lastTeams">Reprendre les équipes du dernier match</button>':''}
   ${ok?'<button class="btn ghost" data-act="balance">⚖ Équilibrer les équipes (selon les notes)</button>':''}
@@ -1041,6 +1044,14 @@ function balanceOf(pid,exceptMid){
   for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0)||x.matchId===exceptMid)continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m)continue;
     const r=betResult(m,x);b+=r==null?-x.stake:r}
   return Math.max(0,b);
+}
+function balanceDetail(pid){
+  const d={start:BO_START,nm:0,won:0,lost:0,pend:0,shop:0};
+  for(const m of finished())if(parts(m).includes(pid))d.nm++;
+  for(const x of (S.shop||[]))if(x.buyer===pid)d.shop+=x.cost||0;
+  for(const x of (S.pronos||[])){if(x.voter!==pid||!x.pick||!(x.stake>0))continue;const m=S.matches.find(y=>y.id===x.matchId);if(!m)continue;
+    const r=betResult(m,x);if(r==null)d.pend+=x.stake;else if(r>0)d.won+=r;else d.lost+=-r}
+  return d;
 }
 function pronoLocked(m){return m.status!=='open'||!!m.timer}
 function pronoCard(m){
@@ -1276,7 +1287,7 @@ function vPlayer(pid){
   const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
   const showAll=S.openCm.has('pl:'+pid);
   return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${(()=>{const a=avatarOf(pid);return a?`<img class="pav" src="${a}" alt="">`:''})()}${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
-  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div>${baseOf(pid)!=null?`<p class="small muted" style="margin:10px 0 0">Note de départ : <b>${fmt1(baseOf(pid))}</b> (compte comme 1 match)</p>`:''}<p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
+  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div>${baseOf(pid)!=null?`<p class="small muted" style="margin:10px 0 0">Note de départ : <b>${fmt1(baseOf(pid))}</b> (compte comme 1 match)</p>`:''}<p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${(()=>{const d=balanceDetail(pid);return `<p class="small muted" style="margin:4px 0 0">${BO_START} au départ · +${d.nm*BO_MATCH} (${d.nm} match${d.nm>1?'s':''} joué${d.nm>1?'s':''})${d.won?` · +${d.won} paris gagnés`:''}${d.lost?` · −${d.lost} paris perdus`:''}${d.pend?` · −${d.pend} pari en cours`:''}${d.shop?` · −${d.shop} boutique`:''}</p>`})()}${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
     return (st?`<p class="small" style="margin:6px 0 0">🥸 Moustache offerte par <b>${esc(pname(st.by))}</b> · encore ${d(st)} j</p>`:'')+(go?`<p class="small" style="margin:6px 0 0">✨ Nom en or · encore ${d(go)} j</p>`:'')})()}
   ${myPid()?(pid===myPid()?'<button class="btn ghost" data-act="shop" style="margin:12px 0 0">🛒 Boutique</button>':`<button class="btn ghost" data-act="shop" data-p="${pid}" style="margin:12px 0 0">🥸 Moustache · ${SHOP.stache.cost} 🏆</button>`):''}${!S.anon&&(pid===myPid()||isGAdmin())?`<label class="upl">📷 ${avatarOf(pid)?'Changer la photo de profil':'Ajouter une photo de profil'}<input type="file" accept="image/*" data-pp="${pid}"></label>`:''}<button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
   <div class="card"><h2>Badges</h2>${bd.length?`<div class="badges">${bd.map(([i,l])=>`<span class="badge"><i>${i}</i>${l}</span>`).join('')}</div>`:'<p class="small muted" style="margin:0">Aucun badge pour l’instant.</p>'}</div>
