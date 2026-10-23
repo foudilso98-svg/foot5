@@ -374,6 +374,7 @@ body.nogroup .tabs{display:none}
 .btn.podbtn{background:linear-gradient(90deg,#E0A800,#F5C542);color:#3A2A00}
 .pnote{display:inline-block;min-width:30px;text-align:center;font-size:12px;font-weight:700;padding:1px 6px;border-radius:6px;background:rgba(52,199,89,.16);color:#1f8a4c;margin-left:4px;vertical-align:1px}
 .hst{white-space:nowrap;font-weight:600;color:var(--ink,inherit)}
+.plnk{cursor:pointer;text-decoration:underline dotted rgba(127,127,127,.6);text-underline-offset:3px}
 .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 14px}.robar span{flex:1 1 100%;font-size:15px}
 .glist button.on{border-color:var(--pitch);box-shadow:inset 0 0 0 1px var(--pitch)}
 .glist small{color:var(--muted);font-weight:500;font-size:13px}
@@ -529,6 +530,8 @@ const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k
 let LANG=(()=>{try{const l=localStorage.getItem('foot5_lang');if(l==='fr'||l==='en')return l}catch(e){}return /^fr/i.test(navigator.language||'fr')?'fr':'en'})();
 document.documentElement.lang=LANG;
 const EN={
+'Au moins 1 titulaire par équipe.':'At least 1 starter per team.','Place au moins 2 joueurs dans les équipes.':'Put at least 2 players in the teams.',
+'📊 Voir la fiche':'📊 View profile',
 '👑 Couronne':'👑 Crown','👑 Tu portes la couronne.':'👑 You wear the crown.','Remettre à zéro':'Reset','Soldes remis à 100 🏆.':'Balances reset to 100 🏆.',
 '📥 Notes de départ':'📥 Starting ratings','— Ignorer —':'— Skip —','+ Créer comme invité':'+ Create as guest','à vérifier':'check','Importer':'Import',
 'Notes du premier sondage, converties sur 10. Chaque note compte comme 1 match, puis les notes des matchs prennent le relais. Vérifie qui est qui.':'Ratings from the first survey, converted to /10. Each counts as 1 match, then match ratings take over. Check who is who.',
@@ -643,6 +646,7 @@ const EN={
 'en haut du script. Voir README.':'at the top of the script. See README.','Nom équipe A':'Team A name','Nom équipe B':'Team B name','A :':'A:','B :':'B:'
 };
 const ENRX=[
+[/^⚠️ Équipes inégales : (\d+) contre (\d+)\.$/,'⚠️ Uneven teams: $1 vs $2.'],
 [/^🔄 Remettre les soldes à (\d+) 🏆$/,'🔄 Reset balances to $1 🏆'],[/^👑 Couronne · encore (\d+) j$/,'👑 Crown · $1 days left'],
 [/^Une couronne à côté de ton nom pendant 7 jours\.(?: Active encore (\d+) j\.)?$/,'A crown next to your name for 7 days.'],
 [/^Par match : \+(\d+) 🏆 joué, \+(\d+) victoire, \+(\d+) MVP\. Gagne des paris pour en avoir plus\.$/,'Per match: +$1 🏆 played, +$2 win, +$3 MVP. Win bets to get more.'],
@@ -753,7 +757,7 @@ function render(){
   else if(!S.group)h=vWelcome();
   else if(!S.ready)h='<p class="muted">Chargement…</p>'+(S.slow?'<p class="small muted">Étape : '+esc(S.step||'?')+' · reçu : '+Object.keys(S.got).filter(k=>S.got[k]).join(',')+(S.dbErr?' · erreur : '+esc(S.dbErr):'')+'</p>':'');
   else h=(S.anon?roBanner():'')+({match:vMatch,vote:vVote,stats:vStats,hist:vHist})[S.tab]();
-  $v.innerHTML=h;goldify($v);goldify($b);
+  $v.innerHTML=h;goldify($v);goldify($b);tagNames($v);tagNames($b);
 }
 (()=>{const l=document.querySelectorAll('.bgs div');let i=0;if(l.length<2||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   setInterval(()=>{l[i].classList.remove('on');i=(i+1)%l.length;l[i].classList.add('on')},8000)})();
@@ -885,7 +889,7 @@ function closeForm(m){
 function vSetup(){
   const a=S.setup.assign,ids=Object.keys(a).filter(p=>S.players.some(x=>x.id===p));
   const c=k=>ids.filter(p=>a[p]===k).length;
-  const nA=c('A'),nB=c('B'),ok=nA===5&&nB===5;
+  const nA=c('A'),nB=c('B'),ok=nA>=1&&nB>=1;
   const pool=S.players.filter(p=>((p.uid||p.guest)&&!p.out)||a[p.id]).sort((x,y)=>(!!y.uid-!!x.uid)||x.name.localeCompare(y.name,'fr'));
   const lab={A:'A',B:'B',sA:'Rem. A',sB:'Rem. B'};
   const stv={};computeStats().forEach(x=>{if(x.avg!=null)stv[x.p]=x.avg});const nt=p=>stv[p]??baseOf(p);
@@ -896,12 +900,12 @@ function vSetup(){
   <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" placeholder="Équipe A" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" placeholder="Équipe B" value="${esc(S.setup.nameB)}"></label></div></div>
   <div class="card"><h2>Joueurs</h2>
   <div class="addrow"><input id="newName" placeholder="Nom de l’invité" maxlength="30" value="${esc(S.setup.newName)}" autocomplete="off"><button class="btn inline" data-act="addPlayer">+ Invité</button></div>
-  <div class="counts"><span class="${nA===5?'ok':''}"><span class="dot A"></span> A : <b>${nA}/5</b>${tav('A')}${c('sA')?' +'+c('sA')+' remp.':''}</span><span class="${nB===5?'ok':''}"><span class="dot B"></span> B : <b>${nB}/5</b>${tav('B')}${c('sB')?' +'+c('sB')+' remp.':''}</span></div>
+  <div class="counts"><span class="${nA>=1?'ok':''}"><span class="dot A"></span> A : <b>${nA}</b>${tav('A')}${c('sA')?' +'+c('sA')+' remp.':''}</span><span class="${nB>=1?'ok':''}"><span class="dot B"></span> B : <b>${nB}</b>${tav('B')}${c('sB')?' +'+c('sB')+' remp.':''}</span></div>
   ${rows||'<p class="muted small">Les joueurs qui ont un compte apparaissent ici automatiquement. Ajoute les autres comme invités.</p>'}</div>
   ${closedMatches().length&&!ids.length?'<button class="btn ghost" data-act="lastTeams">Reprendre les équipes du dernier match</button>':''}
   ${ok?'<button class="btn ghost" data-act="balance">⚖ Équilibrer les équipes (selon les notes)</button>':''}
   <button class="btn" data-act="create" ${ok?'':'disabled'}>Créer le match</button>
-  ${ok?'':'<p class="small muted" style="text-align:center;margin-top:-4px">5 titulaires par équipe requis.</p>'}`;
+  ${ok?(nA!==nB?`<p class="small muted" style="text-align:center;margin-top:-4px">⚠️ Équipes inégales : ${nA} contre ${nB}.</p>`:''):'<p class="small muted" style="text-align:center;margin-top:-4px">Au moins 1 titulaire par équipe.</p>'}`;
 }
 
 /* Vote */
@@ -1018,6 +1022,14 @@ function shopFx(){const fx={gold:{},stache:{},crown:{}},DAY=864e5;
     const start=cur&&cur.end>x.at?cur.end:x.at;t[x.target]={end:start+it.days*DAY,by:x.buyer}});
   return fx}
 function fxOn(item,pid){const e=S.fx&&S.fx[item][pid];return e&&e.end>Date.now()?e:null}
+function tagNames(root){
+  if(!root||!S.players.length)return;const map={},dup=new Set();
+  S.players.forEach(p=>{const k=p.name.trim();if(map[k])dup.add(k);map[k]=p.id});
+  root.querySelectorAll('span,b,li,div,strong,td,small').forEach(el=>{if(el.dataset.pcard||el.childNodes.length!==1||el.firstChild.nodeType!==3)return;
+    if(el.closest('button:not(.hitem),a,select,label,input,.pick,.chips,.seg,.sorts,[data-pl],[data-assign]'))return;
+    const t=el.firstChild.nodeValue.replace(/( 👑| 🥸)+$/,'').trim();if(map[t]&&!dup.has(t)){el.dataset.pcard=map[t];el.classList.add('plnk')}});
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-pcard]');if(!t)return;e.preventDefault();e.stopPropagation();playerCard(t.dataset.pcard)},true);
 function goldify(root){
   const names=new Set(S.players.filter(p=>fxOn('gold',p.id)).map(p=>p.name));if(!names.size||!root)return;
   root.querySelectorAll('span,b,button,li,div,a,td,strong,option').forEach(el=>{if(el.childNodes.length!==1||el.firstChild.nodeType!==3||el.closest('.chips,.seg,.sorts,.pick,select'))return;
@@ -1241,8 +1253,8 @@ async function podiumModal(mid){
 async function playerCard(pid){
   const c=drawCard(pid,await avatarImg(pid));if(!c)return;const url=c.toDataURL('image/png');const nm=pname(pid).replace(/[^\w\-]+/g,'_');
   openModal(`<h2>Carte joueur</h2><img src="${url}" alt="Carte de ${esc(pname(pid))}" style="width:100%;border-radius:16px;display:block;margin-bottom:12px">
-  <button class="btn" id="cshare" style="background:#25D366">Partager</button><a class="btn ghost" id="cdl" href="${url}" download="carte_${nm}.png" style="text-align:center;text-decoration:none">Télécharger</a><button class="btn ghost" id="cclose">Fermer</button>`);
-  $m.querySelector('#cclose').onclick=closeModal;
+  <button class="btn" id="cshare" style="background:#25D366">Partager</button><a class="btn ghost" id="cdl" href="${url}" download="carte_${nm}.png" style="text-align:center;text-decoration:none">Télécharger</a>${S.tab==='stats'&&S.playerView===pid?'':'<button class="btn ghost" id="cfiche">📊 Voir la fiche</button>'}<button class="btn ghost" id="cclose">Fermer</button>`);
+  $m.querySelector('#cclose').onclick=closeModal;const cf=$m.querySelector('#cfiche');if(cf)cf.onclick=()=>{closeModal();S.playerView=pid;S.tab='stats';render();window.scrollTo(0,0)};
   $m.querySelector('#cshare').onclick=()=>c.toBlob(async b=>{const f=new File([b],'carte_'+nm+'.png',{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:pname(pid)})}catch(_){}}else $m.querySelector('#cdl').click()},'image/png');
 }
@@ -1381,7 +1393,7 @@ function vHist(){
   if(!ms.length)return '<div class="empty"><p>Aucun match clôturé.</p></div>';
   return ms.map(m=>{
     const gs=goalsOf(m),nb=p=>gs.filter(g=>g.scorer===p).length,na=p=>gs.filter(g=>g.assist===p).length;
-    const names=t=>[...m.teams[t],...(m.subs[t]||[])].map(p=>{const g=nb(p),a=na(p);return esc(pname(p,m))+(g||a?` <span class="hst">${g?`⚽×${g}`:''}${g&&a?' ':''}${a?`🅰️×${a}`:''}</span>`:'')}).join(', ');
+    const names=t=>[...m.teams[t],...(m.subs[t]||[])].map(p=>{const g=nb(p),a=na(p);return `<span>${esc(pname(p,m))}</span>`+(g||a?` <span class="hst">${g?`⚽×${g}`:''}${g&&a?' ':''}${a?`🅰️×${a}`:''}</span>`:'')}).join(', ');
     const csc=t=>gs.filter(g=>g.scorer==='csc'&&g.team===t).length;
     const open=S.openHist===m.id;
     return `<button class="hitem" data-hist="${m.id}" aria-expanded="${open}"><div class="d">${esc(fmtDate(m.date))}</div>
@@ -1432,7 +1444,7 @@ async function addPlayer(force){
 async function createMatch(){
   const a=S.setup.assign,ids=Object.keys(a).filter(p=>S.players.some(x=>x.id===p));
   const g=k=>ids.filter(p=>a[p]===k);
-  if(g('A').length!==5||g('B').length!==5)return;
+  if(!g('A').length||!g('B').length)return;
   const mid=rid('m'),all=[...g('A'),...g('sA'),...g('B'),...g('sB')];
   const names={};
   for(const p of all)names[p]=pname(p);
@@ -1461,20 +1473,23 @@ function lastTeams(){
 }
 function balance(){
   const a=S.setup.assign,ten=Object.keys(a).filter(p=>(a[p]==='A'||a[p]==='B')&&S.players.some(x=>x.id===p));
-  if(ten.length!==10)return;
+  const n=ten.length;if(n<2){toast(tr('Place au moins 2 joueurs dans les équipes.'));return}
   const st={};computeStats().forEach(x=>st[x.p]=x.avg);
-  const r=p=>st[p]??baseOf(p)??6;
-  const tot=ten.reduce((t,p)=>t+r(p),0);let best=[];
-  for(let mask=0;mask<1024;mask++){
-    let c=0,sum=0;for(let i=0;i<10;i++)if(mask>>i&1){c++;sum+=r(ten[i])}
-    if(c!==5||!(mask&1))continue;
-    best.push({mask,d:Math.abs(tot-2*sum)});
-  }
-  best.sort((x,y)=>x.d-y.d);const minD=best[0].d;
-  const pool=best.filter(x=>x.d<=minD+0.3).slice(0,8);
-  const pick=pool[Math.floor(Math.random()*pool.length)].mask;
+  const r=p=>st[p]??baseOf(p)??6,h=Math.floor(n/2);
+  let pick=0;
+  if(n<=18){
+    const tot=ten.reduce((t,p)=>t+r(p),0),best=[];
+    // équipe de h joueurs : moyenne la plus proche de l'autre équipe
+    for(let mask=0;mask<(1<<n);mask++){
+      let c=0,sum=0;for(let i=0;i<n;i++)if(mask>>i&1){c++;sum+=r(ten[i])}
+      if(c!==h||(n%2===0&&!(mask&1)))continue;
+      best.push({mask,d:Math.abs(sum/h-(tot-sum)/(n-h))});
+    }
+    best.sort((x,y)=>x.d-y.d);const minD=best[0].d;
+    const pool=best.filter(x=>x.d<=minD+0.06).slice(0,8);pick=pool[Math.floor(Math.random()*pool.length)].mask;
+  }else{const o=ten.map((p,i)=>i).sort((x,y)=>r(ten[y])-r(ten[x]));let sA=0,sB=0,cA=0;o.forEach(i=>{if(cA<h&&(sA<=sB||n-h<=o.length-cA)){pick|=1<<i;sA+=r(ten[i]);cA++}else sB+=r(ten[i])})}
   ten.forEach((p,i)=>a[p]=(pick>>i&1)?'A':'B');
-  const sa=ten.filter(p=>a[p]==='A').reduce((t,p)=>t+r(p),0)/5,sb=ten.filter(p=>a[p]==='B').reduce((t,p)=>t+r(p),0)/5;
+  const av=t=>{const l=ten.filter(p=>a[p]===t);return l.reduce((x,p)=>x+r(p),0)/l.length};const sa=av('A'),sb=av('B');
   render();toast(`Moyennes : A ${fmt1(sa)} / B ${fmt1(sb)}`);
 }
 async function timer(kind){
@@ -1604,7 +1619,7 @@ $v.addEventListener('click',e=>{
   const as=e.target.closest('[data-assign]');
   if(as){const p=as.dataset.p,k=as.dataset.assign,a=S.setup.assign;
     if(a[p]===k){delete a[p]}else{
-      if((k==='A'||k==='B')&&Object.keys(a).filter(x=>a[x]===k&&S.players.some(y=>y.id===x)).length>=5){toast('Équipe '+k+' complète.');return}
+      if((k==='A'||k==='B')&&Object.keys(a).filter(x=>a[x]===k&&S.players.some(y=>y.id===x)).length>=11){toast('Équipe '+k+' complète.');return}
       a[p]=k}
     render();return}
   const w=e.target.closest('[data-w]');
