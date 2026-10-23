@@ -527,6 +527,9 @@ const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k
 let LANG=(()=>{try{const l=localStorage.getItem('foot5_lang');if(l==='fr'||l==='en')return l}catch(e){}return /^fr/i.test(navigator.language||'fr')?'fr':'en'})();
 document.documentElement.lang=LANG;
 const EN={
+'📥 Notes de départ':'📥 Starting ratings','— Ignorer —':'— Skip —','+ Créer comme invité':'+ Create as guest','à vérifier':'check','Importer':'Import',
+'Notes du premier sondage, converties sur 10. Chaque note compte comme 1 match, puis les notes des matchs prennent le relais. Vérifie qui est qui.':'Ratings from the first survey, converted to /10. Each counts as 1 match, then match ratings take over. Check who is who.',
+'Un joueur est choisi deux fois.':'A player is selected twice.','Notes de départ importées.':'Starting ratings imported.','Note de départ :':'Starting rating:','(compte comme 1 match)':'(counts as 1 match)',
 '🏆 Podium du match':'🏆 Match podium','Création du podium…':'Building the podium…','Pas encore de notes pour ce match.':'No ratings for this match yet.','Partager':'Share','Télécharger':'Download',
 '📅 Programmer le prochain match':'📅 Schedule the next match','📅 Prochain match':'📅 Next match','Ce soir':'Tonight','Demain':'Tomorrow','🔔 Rappel la veille':'🔔 Remind me the day before','Modifier':'Edit',
 'Date':'Date','Heure':'Time','Lieu (optionnel)':'Place (optional)','Supprimer la date':'Remove date','Choisis une date.':'Pick a date.','Prochain match programmé.':'Next match scheduled.',
@@ -986,7 +989,7 @@ function filteredMatches(){
   else if(f.mode==='dates'&&ms.length>1){const [fi,ti]=rangeIdx(ms);ms=ms.slice(fi,ti+1)}
   return ms;
 }
-function teamRating(m,t,st){const ps=teamPlayers(m,t);if(!ps.length)return 6;return ps.reduce((a,p)=>a+(st[p]??6),0)/ps.length}
+function teamRating(m,t,st){const ps=teamPlayers(m,t);if(!ps.length)return 6;return ps.reduce((a,p)=>a+(st[p]??baseOf(p)??6),0)/ps.length}
 function computeOdds(teams,subs){
   const st={};computeStats().forEach(x=>{if(x.avg!=null)st[x.p]=x.avg});
   const m={teams,subs:subs||{A:[],B:[]}};const d=teamRating(m,'A',st)-teamRating(m,'B',st);
@@ -1074,6 +1077,7 @@ function pronoStats(){
     return {p,n,ok,bal:balanceOf(p),m}}).filter(x=>x.m).sort((a,b)=>b.bal-a.bal);
 }
 function resOf(m,p){if(m.winner==='N')return 'N';return m.winner===teamOf(m,p)?'V':'D'}
+function baseOf(p){const pl=S.players.find(x=>x.id===p);return pl&&typeof pl.base==='number'?pl.base:null}
 function computeStats(ms){
   ms=ms||finished();const st={};
   for(const m of ms){
@@ -1090,7 +1094,9 @@ function computeStats(ms){
   return Object.values(st).map(s=>{
     let cur=0,ct='';for(let i=s.log.length-1;i>=0;i--){if(!ct)ct=s.log[i].res;if(s.log[i].res===ct)cur++;else break}
     let best=0,run=0;s.log.forEach(l=>{run=l.res==='V'?run+1:0;best=Math.max(best,run)});
-    return {...s,wr:s.mj?s.v/s.mj*100:0,avg:s.cnt?s.sum/s.cnt:null,streak:{t:ct,n:cur},bestWin:best,hat:s.log.filter(l=>l.g>=3).length};
+    const rated=s.log.filter(l=>l.note!=null).length,b=baseOf(s.p);let sum=s.sum,cnt=s.cnt;
+    if(b!=null){const w=rated?cnt/rated:1;sum+=b*w;cnt+=w}
+    return {...s,wr:s.mj?s.v/s.mj*100:0,avg:cnt?sum/cnt:null,streak:{t:ct,n:cur},bestWin:best,hat:s.log.filter(l=>l.g>=3).length};
   });
 }
 function form(x){return x.streak.t==='V'&&x.streak.n>=3?' 🔥':x.streak.t==='D'&&x.streak.n>=3?' 🥶':''}
@@ -1253,9 +1259,11 @@ function h2hCard(ms,everyone){
   return `<div class="card"><h2>⚔️ Face à face</h2><div class="two"><select data-h2h="a" aria-label="Joueur 1">${opt(h.a)}</select><select data-h2h="b" aria-label="Joueur 2">${opt(h.b)}</select></div>${body}</div>`;
 }
 function prCard(){
-  const l=pronoStats();if(!l.length)return '';
+  const ps=pronoStats(),by={};ps.forEach(x=>by[x.p]=x);
+  const l=S.players.filter(p=>((p.uid||p.guest)&&!p.out)||by[p.id]).map(p=>by[p.id]||{p:p.id,n:0,ok:0,bal:balanceOf(p.id),m:null}).sort((a,b)=>b.bal-a.bal||pname(a.p).localeCompare(pname(b.p),'fr'));
+  if(!l.length)return '';
   const sb=myPid()?'<button class="btn ghost" data-act="shop" style="margin:0 0 10px">🛒 Boutique</button>':'';
-  return `<div class="card"><h2>🏆 Ballons d’or</h2>${sb}<ol class="rank">${l.slice(0,10).map(x=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o.bal>x.bal).length}</span><span class="nm">${plink(x.p,x.m)}<small class="muted" style="display:block;font-size:12px">${x.ok}/${x.n} paris gagnés</small></span><span class="avg">${Math.round(x.bal)} <small style="font-size:14px">🏆</small></span></li>`).join('')}</ol></div>`;
+  return `<div class="card"><h2>🏆 Ballons d’or</h2>${sb}<ol class="rank">${l.slice(0,20).map(x=>`<li style="grid-template-columns:28px 1fr auto"><span class="pos">${1+l.filter(o=>o.bal>x.bal).length}</span><span class="nm">${plink(x.p,x.m)}${x.n?`<small class="muted" style="display:block;font-size:12px">${x.ok}/${x.n} paris gagnés</small>`:''}</span><span class="avg">${Math.round(x.bal)} <small style="font-size:14px">🏆</small></span></li>`).join('')}</ol></div>`;
 }
 const plink=(p,m)=>`<button class="plink" data-pl="${p}">${esc(pname(p,m))}</button>`;
 function vPlayer(pid){
@@ -1268,7 +1276,7 @@ function vPlayer(pid){
   const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
   const showAll=S.openCm.has('pl:'+pid);
   return back+`<div class="card"><div class="small muted">Fiche joueur</div><div class="pname">${(()=>{const a=avatarOf(pid);return a?`<img class="pav" src="${a}" alt="">`:''})()}${esc(pname(pid,x.last))}${form(x)}</div><p class="small muted" style="margin:0 0 12px">${st}</p>
-  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div><p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
+  <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div>${baseOf(pid)!=null?`<p class="small muted" style="margin:10px 0 0">Note de départ : <b>${fmt1(baseOf(pid))}</b> (compte comme 1 match)</p>`:''}<p class="small" style="margin:10px 0 0">Ballons d’or : <b>${boFmt(balanceOf(pid))}</b></p>${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
     return (st?`<p class="small" style="margin:6px 0 0">🥸 Moustache offerte par <b>${esc(pname(st.by))}</b> · encore ${d(st)} j</p>`:'')+(go?`<p class="small" style="margin:6px 0 0">✨ Nom en or · encore ${d(go)} j</p>`:'')})()}
   ${myPid()?(pid===myPid()?'<button class="btn ghost" data-act="shop" style="margin:12px 0 0">🛒 Boutique</button>':`<button class="btn ghost" data-act="shop" data-p="${pid}" style="margin:12px 0 0">🥸 Moustache · ${SHOP.stache.cost} 🏆</button>`):''}${!S.anon&&(pid===myPid()||isGAdmin())?`<label class="upl">📷 ${avatarOf(pid)?'Changer la photo de profil':'Ajouter une photo de profil'}<input type="file" accept="image/*" data-pp="${pid}"></label>`:''}<button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
   <div class="card"><h2>Badges</h2>${bd.length?`<div class="badges">${bd.map(([i,l])=>`<span class="badge"><i>${i}</i>${l}</span>`).join('')}</div>`:'<p class="small muted" style="margin:0">Aucun badge pour l’instant.</p>'}</div>
@@ -1431,7 +1439,7 @@ function balance(){
   const a=S.setup.assign,ten=Object.keys(a).filter(p=>(a[p]==='A'||a[p]==='B')&&S.players.some(x=>x.id===p));
   if(ten.length!==10)return;
   const st={};computeStats().forEach(x=>st[x.p]=x.avg);
-  const r=p=>st[p]??6;
+  const r=p=>st[p]??baseOf(p)??6;
   const tot=ten.reduce((t,p)=>t+r(p),0);let best=[];
   for(let mask=0;mask<1024;mask++){
     let c=0,sum=0;for(let i=0;i<10;i++)if(mask>>i&1){c++;sum+=r(ten[i])}
@@ -1859,7 +1867,7 @@ function adminsBlock(){
   const ad=(g.admins||[]).map(nm).filter(Boolean);
   let h=`<p class="small muted" style="margin:0 0 12px">Admin principal : <b>${esc(nm(g.owner)||tr('le créateur'))}</b>${ad.length?`<br>Autres admins : <b>${esc(ad.join(', '))}</b>`:''}</p>`;
   if(isGOwner())h+='<button class="btn ghost" id="gadmins">👑 Gérer les admins</button>';
-  if(isGAdmin())h+='<button class="btn ghost" id="gmembers">👥 Gérer les membres</button>';
+  if(isGAdmin())h+='<button class="btn ghost" id="gmembers">👥 Gérer les membres</button><button class="btn ghost" id="gseed">📥 Notes de départ</button>';
   return h;
 }
 function canExclude(uid){const g=S.gdoc||{};if(!uid||uid===S.uid||uid===g.owner)return false;if((g.admins||[]).includes(uid)&&!isGOwner())return false;return true}
@@ -1872,6 +1880,27 @@ function excludePlayer(pid,after){
   if(p.uid&&!canExclude(p.uid)){toast(tr('Impossible d’exclure cette personne.'));return}
   confirmBox(p.uid?`Exclure <b>${esc(p.name)}</b> du groupe ? Il ne pourra plus voir ni rejoindre le groupe. Ses stats restent.`:`Retirer <b>${esc(p.name)}</b> de la liste ? Ses stats restent.`,p.uid?tr('Exclure'):tr('Retirer'),async()=>{
     try{if(p.uid)await banUid(p.uid);await db.doc('players/'+pid).update(p.uid?{out:true,guest:false}:{guest:false});delete S.setup.assign[pid];toast(p.uid?tr('Membre exclu.'):tr('Joueur retiré.'));if(after)after()}catch(e){toast(errMsg(e))}})}
+const SEED_NOTES=[['Romain',3.857143],['Youcef',2.75],['Omar',2.964286],['Moha hadji',3.5],['Sofiane',3.571429],['Karim',2.464286],['Galoul',4.178571],['Damjan',1.857143],['Manuel',4.333333],['Burak',3.357143],['Tony',2.25],['Redouane',4.928571],['Marco',4.785714],['Thomas',2.866667],['Naoufel',3.285714],['Sajid',3.464286],['Yves',3.3],['Konde',2]];
+function seedModal(){
+  if(!isGAdmin())return;
+  const nn=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const ps=S.players.filter(p=>!p.out).sort((a,b)=>a.name.localeCompare(b.name,'fr')),used=new Set();
+  const ALIAS={'marco':'baro','romain':'justroms','thomas':'destru','manuel':'manu','moha hadji':'moha','naoufel':'nowfl','damjan':'shiftdamjan','tony':'tony_m','karim':'rimkovinho'};
+  const guess=n=>{const al=ALIAS[nn(n)];if(al){const pa=ps.find(x=>nn(x.name)===al&&!used.has(x.id));if(pa){used.add(pa.id);return pa.id}}const k=nn(n),f=k.split(/\s+/)[0];
+    let p=ps.find(x=>nn(x.name)===k)||ps.find(x=>nn(x.name)===f)||ps.find(x=>nn(x.name).split(/\s+/)[0]===f)||ps.find(x=>lev(nn(x.name),k)<=1||lev(nn(x.name),f)<=1);
+    return p&&!used.has(p.id)?(used.add(p.id),p.id):''};
+  const rows=SEED_NOTES.map(([n,v])=>({n,v:Math.round(v*20)/10,p:guess(n)}));
+  const opt=sel=>`<option value="">— Ignorer —</option><option value="+"${sel==='+'?' selected':''}>+ Créer comme invité</option>`+ps.map(p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${esc(p.name)}</option>`).join('');
+  openModal(`<h2>📥 Notes de départ</h2><p class="small muted" style="margin-top:0">Notes du premier sondage, converties sur 10. Chaque note compte comme 1 match, puis les notes des matchs prennent le relais. Vérifie qui est qui.</p>
+  <div class="mlist">${rows.map((r,i)=>`<div class="mrow"><span><b>${esc(r.n)}</b> ${fmt1(r.v)}${r.p?'':' <small class="mtag gst">à vérifier</small>'}</span><select data-si="${i}" style="max-width:52%;font-size:15px;padding:6px;border-radius:8px">${opt(r.p)}</select></div>`).join('')}</div>
+  <p class="msg err" id="serr"></p><button class="btn" id="sok">Importer</button><button class="btn ghost" id="sno">Annuler</button>`);
+  $m.querySelector('#sno').onclick=closeModal;
+  $m.querySelector('#sok').onclick=async()=>{
+    const ch=[...$m.querySelectorAll('[data-si]')].map(x=>({r:rows[+x.dataset.si],p:x.value}));
+    const ids=ch.filter(c=>c.p&&c.p!=='+').map(c=>c.p);if(new Set(ids).size!==ids.length){$m.querySelector('#serr').textContent=tr('Un joueur est choisi deux fois.');return}
+    try{for(const c of ch){if(!c.p)continue;if(c.p==='+')await db.doc('players/'+rid('p')).set({name:c.r.n,createdAt:Date.now(),guest:true,base:c.r.v});else await db.doc('players/'+c.p).update({base:c.r.v})}
+      closeModal();toast(tr('Notes de départ importées.'))}catch(e){$m.querySelector('#serr').textContent=errMsg(e)}};
+}
 async function membersModal(){
   if(!isGAdmin())return;
   openModal('<h2>👥 Membres</h2><p class="muted">Chargement…</p>');
@@ -2047,7 +2076,7 @@ function groupMenu(){
   const on=(id,f)=>{const b=$m.querySelector('#'+id);if(b)b.onclick=f};
   $m.querySelectorAll('[data-gsw]').forEach(b=>b.onclick=()=>switchGroup(b.dataset.gsw));
   on('gclose',closeModal);on('gjoin',gJoin);on('gnew',gCreate);
-  on('gadmins',adminsModal);on('gmembers',membersModal);
+  on('gadmins',adminsModal);on('gmembers',membersModal);on('gseed',seedModal);
   on('gshare',()=>{const t=trLines(`⚽ Rejoins le groupe « ${g.name} » pour noter nos matchs de foot à 5 :\n${joinLink()}`);
     if(navigator.share){navigator.share({text:t}).catch(()=>{});return}window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')});
   on('gcopy',async()=>{try{await navigator.clipboard.writeText(joinLink());toast('Lien copié.')}catch(e){prompt(tr('Copie ce lien :'),joinLink())}});
