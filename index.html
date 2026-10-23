@@ -1908,7 +1908,7 @@ const SEED_NOTES=[['Romain',3.857143],['Youcef',2.75],['Omar',2.964286],['Moha h
 function seedRows(){
   const nn=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   const ps=S.players.filter(p=>!p.out).sort((a,b)=>a.name.localeCompare(b.name,'fr')),used=new Set();
-  const ALIAS={'marco':'baro','romain':'justroms','thomas':'destru','manuel':'manu','moha hadji':'moha','naoufel':'nowfl','damjan':'shiftdamjan','tony':'tony_m','karim':'rimkovinho'};
+  const ALIAS={'marco':'baro','romain':'justroms','thomas':'destru','manuel':'manu','moha hadji':'moha','naoufel':'nowfl','damjan':'shiftdamjan','tony':'tony_m','karim':'rimkovinho','galoul':'ilies'};
   const guess=n=>{const al=ALIAS[nn(n)];if(al){const pa=ps.find(x=>nn(x.name)===al&&!used.has(x.id));if(pa){used.add(pa.id);return pa.id}}const k=nn(n),f=k.split(/\s+/)[0];
     let p=ps.find(x=>nn(x.name)===k)||ps.find(x=>nn(x.name)===f)||ps.find(x=>nn(x.name).split(/\s+/)[0]===f)||ps.find(x=>lev(nn(x.name),k)<=1||lev(nn(x.name),f)<=1);
     return p&&!used.has(p.id)?(used.add(p.id),p.id):''};
@@ -1918,11 +1918,11 @@ function seedRows(){
 let seedBusy=false;
 async function autoSeed(){
   if(seedBusy||S.anon||!S.ready||!S.group||!isGAdmin())return;
-  if((S.meta&&S.meta.seeded)||S.players.some(p=>typeof p.base==='number'))return;
+  const {rows}=seedRows(),todo=rows.filter(r=>{const p=r.p&&S.players.find(x=>x.id===r.p);return p&&typeof p.base!=='number'});
+  if(!todo.length)return;
   seedBusy=true;
-  try{const {rows}=seedRows();let n=0;
-    for(const r of rows)if(r.p){await db.doc('players/'+r.p).update({base:r.v});n++}
-    await db.doc('meta/state').set({seeded:true},{merge:true});
+  try{let n=0;
+    for(const r of todo){await db.doc('players/'+r.p).update({base:r.v});n++}
     if(n)toast((LANG==='en'?'Starting ratings imported: ':'Notes de départ importées : ')+n+(LANG==='en'?' players.':' joueurs.'));
   }catch(e){console.error(e);toast(errMsg(e))}finally{seedBusy=false}
 }
