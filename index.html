@@ -697,7 +697,7 @@ function parts(m){return [...m.teams.A,...(m.subs.A||[]),...m.teams.B,...(m.subs
 function teamOf(m,p){return (m.teams.A.includes(p)||(m.subs.A||[]).includes(p))?'A':'B'}
 function isSub(m,p){return (m.subs.A||[]).includes(p)||(m.subs.B||[]).includes(p)}
 function pname(p,m){const pl=S.players.find(x=>x.id===p);const n=pl?pl.name:((m&&m.names&&m.names[p])||'?');return S.fx?n+(fxOn('crown',p)?' 👑':'')+(fxOn('stache',p)?' 🥸':''):n}
-function tname(m,t){return (m.teamNames&&m.teamNames[t])||('Équipe '+t)}
+function tname(m,t){const n=m&&m.teamNames&&m.teamNames[t];return !n||n==='Équipe '+t?(t==='A'?'Orange':'Bleus'):n}
 function elapsed(m){const t=m&&m.timer;if(!t)return 0;return (t.acc||0)+(t.start?Math.max(0,Date.now()-t.start):0)}
 function fmtClock(ms){const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 setInterval(()=>{const m=cur();if(!m||!m.timer||!m.timer.start)return;const t=fmtClock(elapsed(m));document.querySelectorAll('[data-clock]').forEach(el=>el.textContent=t)},1000);
@@ -743,7 +743,7 @@ const EN={
 'Auto':'Auto','☀️ Clair':'☀️ Light','🌙 Sombre':'🌙 Dark',
 'Envoi de la photo…':'Uploading photo…','Photo de profil ajoutée.':'Profile photo added.','Tu ne peux changer que ta propre photo.':'You can only change your own photo.',
 '📷 Changer la photo de profil':'📷 Change profile photo','📷 Ajouter une photo de profil':'📷 Add a profile photo',
-'👀 Mode spectateur : crée un compte pour jouer, voter et parier.':'👀 Spectator mode: create an account to play, vote and bet.','Compte nécessaire':'Account required','Sans compte, tu peux seulement regarder les matchs et les stats.':'Without an account you can only view matches and stats.','Un joueur avec un compte doit créer le match.':'A player with an account must create the match.','Seul un admin peut modifier le score d’un match terminé.':'Only an admin can change the score of a finished match.','Crée un compte pour voter.':'Create an account to vote.','Sans compte, tu peux seulement regarder.':'Without an account you can only watch.','Ton compte n’est pas encore joueur de ce groupe.':'Your account isn’t a player in this group yet.','Ça se fait tout seul, patiente quelques secondes.':'It happens automatically, wait a few seconds.','Tu n’as pas joué ce match.':'You didn’t play this match.','Seuls les joueurs du match votent.':'Only players of the match vote.','Crée un compte pour parier.':'Create an account to bet.','Il faut un compte pour créer un groupe : tu en seras l’admin.':'You need an account to create a group: you’ll be its admin.','Tu seras l’admin du groupe. Tu pourras nommer d’autres admins.':'You’ll be the group admin. You can appoint other admins.','Mot de passe : 4 caractères min.':'Password: 4 characters min.','Admin principal :':'Main admin:','Autres admins :':'Other admins:','le créateur':'the creator','👑 Gérer les admins':'👑 Manage admins','👑 Admins':'👑 Admins','Un admin peut corriger un match terminé, supprimer des votes ou des matchs et changer le mot de passe du groupe. Seuls les joueurs avec un compte peuvent être nommés.':'An admin can fix a finished match, delete votes or matches and change the group password. Only players with an account can be appointed.','Aucun autre joueur avec un compte.':'No other player with an account.','Nommer admin':'Make admin','Ancien admin sans compte':'Former admin without account','Nouvel admin nommé.':'New admin appointed.','Retirer les droits admin de':'Remove admin rights from','admin du groupe ?':'group admin?',
+'👀 Mode spectateur : crée un compte pour jouer, voter et parier.':'👀 Spectator mode: create an account to play, vote and bet.','Compte nécessaire':'Account required','Sans compte, tu peux seulement regarder les matchs et les stats.':'Without an account you can only view matches and stats.','Un joueur avec un compte doit créer le match.':'A player with an account must create the match.','Seul un admin peut modifier le score d’un match terminé.':'Only an admin can change the score of a finished match.','Un admin clôturera les votes et publiera les résultats.':'An admin will close the votes and publish the results.','Crée un compte pour voter.':'Create an account to vote.','Sans compte, tu peux seulement regarder.':'Without an account you can only watch.','Ton compte n’est pas encore joueur de ce groupe.':'Your account isn’t a player in this group yet.','Ça se fait tout seul, patiente quelques secondes.':'It happens automatically, wait a few seconds.','Tu n’as pas joué ce match.':'You didn’t play this match.','Seuls les joueurs du match votent.':'Only players of the match vote.','Crée un compte pour parier.':'Create an account to bet.','Il faut un compte pour créer un groupe : tu en seras l’admin.':'You need an account to create a group: you’ll be its admin.','Tu seras l’admin du groupe. Tu pourras nommer d’autres admins.':'You’ll be the group admin. You can appoint other admins.','Mot de passe : 4 caractères min.':'Password: 4 characters min.','Admin principal :':'Main admin:','Autres admins :':'Other admins:','le créateur':'the creator','👑 Gérer les admins':'👑 Manage admins','👑 Admins':'👑 Admins','Un admin peut corriger un match terminé, supprimer des votes ou des matchs et changer le mot de passe du groupe. Seuls les joueurs avec un compte peuvent être nommés.':'An admin can fix a finished match, delete votes or matches and change the group password. Only players with an account can be appointed.','Aucun autre joueur avec un compte.':'No other player with an account.','Nommer admin':'Make admin','Ancien admin sans compte':'Former admin without account','Nouvel admin nommé.':'New admin appointed.','Retirer les droits admin de':'Remove admin rights from','admin du groupe ?':'group admin?',
 'Foot à 5':'5-a-side','Foot à 5 – Notes':'5-a-side – Ratings','Match':'Match','Voter':'Vote','Stats':'Stats','Historique':'History','Sections':'Sections',
 'Annuler':'Cancel','Tous':'All','Tout':'All','Derniers':'Last','Dates':'Dates','Joueurs':'Players','Joueur':'Player','Filtres':'Filters',
 '🔒 Supprimer ce match':'🔒 Delete this match','(ex æquo)':'(tied)','(remp.)':'(sub)','remp.':'sub','10 buts':'10 goals','10 matchs':'10 matches','10 passes D':'10 assists','25 matchs':'25 matches','3 MOTM':'3 MOTM',
@@ -865,7 +865,7 @@ const ENRX=[
 ];
 const ENTH={'Joueur':'Player','MJ':'P','V':'W','N':'D','D':'L','%V':'W%','Moy.':'Avg','Buts':'Goals','PD':'A','MOTM':'MOTM'};
 const ENRES={'V':'W','N':'D','D':'L'};
-Object.assign(EN,{'Moi':'Me','Ma fiche':'My profile','Ma carte':'My card','Réglages':'Settings','Mon solde':'My balance','Ouvrir la boutique':'Open the shop','Gérer mon compte':'Manage my account','Mes stats tous groupes':'My stats, all groups','Voter maintenant':'Vote now','Face à face':'Head to head','Classement complet':'Full table','← Retour':'← Back','Classement Ballons d’or':'Golden balls ranking','Mon compte':'My account','Compte, langue et thème : onglet Moi.':'Account, language and theme: Me tab.','Créer mon compte':'Create my account','J’ai déjà un compte':'I already have an account','Classements':'Leaderboards','Buteurs':'Scorers','Passeurs':'Assists','Notes':'Ratings','Meilleur buteur':'Top scorer','Meilleur passeur':'Top assists','Meilleure moyenne':'Best average','Homme du match':'Man of the match','buts':'goals','passes':'assists','Ballons d’or':'Golden balls','Fiche joueur':'Player profile'});
+Object.assign(EN,{'Bleus':'Blues','But Orange':'Orange goal','But Bleus':'Blues goal','Orange gagne':'Orange wins','Bleus gagne':'Blues win','Moi':'Me','Ma fiche':'My profile','Ma carte':'My card','Réglages':'Settings','Mon solde':'My balance','Ouvrir la boutique':'Open the shop','Gérer mon compte':'Manage my account','Mes stats tous groupes':'My stats, all groups','Voter maintenant':'Vote now','Face à face':'Head to head','Classement complet':'Full table','← Retour':'← Back','Classement Ballons d’or':'Golden balls ranking','Mon compte':'My account','Compte, langue et thème : onglet Moi.':'Account, language and theme: Me tab.','Créer mon compte':'Create my account','J’ai déjà un compte':'I already have an account','Classements':'Leaderboards','Buteurs':'Scorers','Passeurs':'Assists','Notes':'Ratings','Meilleur buteur':'Top scorer','Meilleur passeur':'Top assists','Meilleure moyenne':'Best average','Homme du match':'Man of the match','buts':'goals','passes':'assists','Ballons d’or':'Golden balls','Fiche joueur':'Player profile'});
 function tr(x,th){
   if(LANG!=='en'||x==null)return x;x=String(x);
   const m=x.match(/^(\s*)([\s\S]*?)(\s*)$/),c=m[2];if(!c)return x;
@@ -979,7 +979,7 @@ function renderBoard(){
 function boardGoals(m){
   const gs=goalsOf(m),f=S.goalForm;
   const li=g=>`<li><span class="g">${g.min?`<b>${g.min}’</b> `:''}⚽ ${g.scorer==='csc'?'CSC':esc(pname(g.scorer,m))}${g.assist?`<small>passe : ${esc(pname(g.assist,m))}</small>`:''}</span>${S.anon?'':`<button class="x" data-act="delGoal" data-g="${g.id}" aria-label="Supprimer le but">×</button>`}</li>`;
-  const lab=t=>{const n=tname(m,t);return n==='Équipe '+t?(t==='A'?'But équipe orange':'But équipe bleue'):'But '+n};
+  const lab=t=>'But '+tname(m,t);
   const tb=t=>S.anon?'':`<button data-gt="${t}" class="${f.team===t?'on':''}" aria-pressed="${f.team===t}"><span class="dot ${t}"></span>${esc(lab(t))}</button>`;
   const K='bg:'+m.id,N=2,open=S.openCm.has(K),mx=Math.max(...['A','B'].map(t=>gs.filter(g=>g.team===t).length));
   const col=t=>{let l=gs.filter(g=>g.team===t);if(!open&&l.length>N)l=l.slice(-N);return `<div class="bcol ${t}">${l.length?`<ul class="bgoals">${l.map(li).join('')}</ul>`:''}${tb(t)}</div>`};
@@ -1004,14 +1004,14 @@ function vMatchIn(){
   if(m.status==='voting'){
     const voted=new Set(votesOf(m.id).map(v=>v.voter));
     return (needVote()?'<button class="btn" data-act="goVote">Voter maintenant</button>':'')+resultCard(m)+shareBtn(m)+photoBlock(m)+(pronosOf(m.id).length?pronoCard(m):'')+`<div class="card"><h2>Votes</h2>${lineup(m,voted)}<p class="small muted" style="margin:10px 0 0">${voted.size}/${parts(m).length} ont voté. ✓ = vote reçu.</p></div>`
-      +(S.anon?'':(needVote()?'':'<button class="btn" data-act="goVote">Noter les joueurs</button>')+'<button class="btn ghost" data-act="closeVotes">Clôturer les votes et publier</button>')
-      +(isGAdmin()?'<button class="btn ghost" data-act="reopen">Revenir au match (corriger buts ou score)</button><button class="btn danger" data-act="newMatch">Abandonner et nouveau match</button>':'<p class="small muted" style="text-align:center">Seul un admin peut modifier le score d’un match terminé.</p>');
+      +(S.anon?'':(needVote()?'':'<button class="btn" data-act="goVote">Noter les joueurs</button>')+(isGAdmin()?'<button class="btn ghost" data-act="closeVotes">Clôturer les votes et publier</button>':''))
+      +(isGAdmin()?'<button class="btn ghost" data-act="reopen">Revenir au match (corriger buts ou score)</button><button class="btn danger" data-act="newMatch">Abandonner et nouveau match</button>':'<p class="small muted" style="text-align:center">Un admin clôturera les votes et publiera les résultats.</p><p class="small muted" style="text-align:center">Seul un admin peut modifier le score d’un match terminé.</p>');
   }
   const t=m.timer,run=!!(t&&t.start);
   let ctl;
   if(!t)ctl='<button class="btn" data-act="tStart">▶ Lancer le match</button>';
   else if(run)ctl='<button class="btn ghost" data-act="tPause">⏸ Pause</button>';
-  else ctl='<div class="row"><button class="btn" data-act="tStart">▶ Reprendre</button><button class="btn ghost" data-act="tReset">Remise à zéro</button></div>';
+  else ctl='<div class="row"><button class="btn" data-act="tStart">▶ Reprendre</button>'+(isGAdmin()?'<button class="btn ghost" data-act="tReset">Remise à zéro</button>':'')+'</div>';
   if(S.anon)ctl='';
   let h=goalFormCard(m)+(m.timer?'':pronoCard(m))+`<div class="card chrono crow"><div class="clockbig ${run?'run':''}" data-clock>${fmtClock(elapsed(m))}</div><div class="cbtns">${ctl}</div></div>`;
   h+=`<div class="card lcomp">${lineup(m)}</div>`;
@@ -1091,7 +1091,7 @@ function vSetup(){
   const rows=pool.map(p=>`<div class="prow"><span class="pn"><button class="plink" data-card="${p.id}">${esc(p.name)}</button>${nt(p.id)!=null?` <small class="pnote">${fmt1(nt(p.id))}</small>`:''}${p.uid?'':' <small class="gtag">invité</small>'}</span><div class="seg4">${['A','B','sA','sB'].map(k=>`<button data-assign="${k}" data-p="${p.id}" class="${a[p.id]===k?'on '+k:''}" aria-pressed="${a[p.id]===k}">${lab[k]}</button>`).join('')}</div>${p.uid&&!isGAdmin()?'<span class="xsp"></span>':p.uid?`<button class="x" data-act="kickP" data-p="${p.id}" aria-label="Exclure">×</button>`:`<button class="x" data-act="delPlayer" data-p="${p.id}" aria-label="Retirer ${esc(p.name)}">×</button>`}</div>`).join('');
   return `<div class="card"><h2>Nouveau match</h2>
   <label class="fld">Date<input type="date" data-s="date" value="${esc(S.setup.date)}"></label>
-  <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" placeholder="Équipe A" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" placeholder="Équipe B" value="${esc(S.setup.nameB)}"></label></div></div>
+  <div class="two"><label class="fld">Nom équipe A<input data-s="nameA" maxlength="24" placeholder="Orange" value="${esc(S.setup.nameA)}"></label><label class="fld">Nom équipe B<input data-s="nameB" maxlength="24" placeholder="Bleus" value="${esc(S.setup.nameB)}"></label></div></div>
   <div class="card"><h2>Joueurs</h2>
   <div class="addrow"><input id="newName" placeholder="Nom de l’invité" maxlength="30" value="${esc(S.setup.newName)}" autocomplete="off"><button class="btn inline" data-act="addPlayer">+ Invité</button></div>
   <div class="counts"><span class="${nA>=1?'ok':''}"><span class="dot A"></span> A : <b>${nA}</b>${tav('A')}${c('sA')?' +'+c('sA')+' remp.':''}</span><span class="${nB>=1?'ok':''}"><span class="dot B"></span> B : <b>${nB}</b>${tav('B')}${c('sB')?' +'+c('sB')+' remp.':''}</span></div>
@@ -1113,7 +1113,7 @@ function vMe(){
   const me=myPid();
   if(!me)return '<div class="empty"><p>Ton compte n’est pas encore joueur de ce groupe.</p><p class="small">Ça se fait tout seul, patiente quelques secondes.</p></div>'+sets;
   const a=avatarOf(me),goF=fxOn('gold',me);
-  return `<div class="card"><div class="phero">${a?`<img class="av0${goF?' au':''}" src="${a}" alt="">`:`<div class="av0${goF?' au':''}" aria-hidden="true">${esc((pname(me)[0]||'?').toUpperCase())}</div>`}<div style="min-width:0"><div class="small muted">Moi</div><div class="pname"><span>${esc(pname(me))}</span></div></div></div>
+  return `<div class="card"><div class="phero">${a?`<img class="av0${goF?' au':''}" src="${esc(a)}" alt="">`:`<div class="av0${goF?' au':''}" aria-hidden="true">${esc((pname(me)[0]||'?').toUpperCase())}</div>`}<div style="min-width:0"><div class="small muted">Moi</div><div class="pname"><span>${esc(pname(me))}</span></div></div></div>
   <div class="two"><button class="btn" data-pl="${me}" style="margin:0">Ma fiche</button><button class="btn ghost" data-act="card" data-p="${me}" style="margin:0">Ma carte</button></div></div>
   <div class="card"><h2>Ballons d’or</h2><div class="botile" style="margin-top:0"><span>Mon solde</span><b>${boFmt(balanceOf(me))}</b></div>${boDetail(me)}<button class="btn" data-act="shop" style="margin:12px 0 0">Ouvrir la boutique</button></div>
   ${sets}`;
@@ -1220,7 +1220,7 @@ function computeOdds(teams,subs){
 function oddsOf(m){return m.odds||computeOdds(m.teams,m.subs)}
 const fmtOdd=n=>LANG==='en'?n.toFixed(2):n.toFixed(2).replace('.',',');
 function pronosOf(mid){return (S.pronos||[]).filter(x=>x.matchId===mid&&x.pick&&x.stake>0)}
-const BO_START=100,BO_MATCH=50,BO_WIN=50,BO_MVP=100,SHOP={gold:{cost:1000,days:7},crown:{cost:1500,days:7},stache:{cost:2000,days:7}};
+const BO_MAXBET=1000,BO_START=100,BO_MATCH=50,BO_WIN=50,BO_MVP=100,SHOP={gold:{cost:1000,days:7},crown:{cost:1500,days:7},stache:{cost:2000,days:7}};
 function boReset(){return (S.gdoc&&S.gdoc.boReset)||0}
 function mWin(m){const sc=m.score||{A:0,B:0};return m.winner||(sc.A>sc.B?'A':sc.B>sc.A?'B':'N')}
 function matchGain(m,pid){if(!parts(m).includes(pid))return null;const r={play:BO_MATCH,win:0,mvp:0};
@@ -1324,7 +1324,7 @@ function balanceDetail(pid){
     const r=betResult(m,x);if(r==null)d.pend+=x.stake;else if(r>0)d.won+=r;else d.lost+=-r}
   return d;
 }
-function pronoLocked(m){return m.status!=='open'||!!m.timer}
+function pronoLocked(m){return m.status!=='open'||!!m.timer||goalsOf(m).length>0}
 function pronoCard(m){
   const od=oddsOf(m),mine=myPid(),lock=pronoLocked(m),list=pronosOf(m.id);
   const ex=mine&&list.find(x=>x.voter===mine);
@@ -1335,8 +1335,8 @@ function pronoCard(m){
   let me='';
   if(!lock){
     if(!mine){me=S.anon?'<p class="small muted" style="margin:10px 0 0">Crée un compte pour parier.</p>':''}
-    else{const bal=balanceOf(mine,m.id);d.stake=Math.max(0,Math.min(d.stake,bal));
-      const chip=v=>`<button data-stk="${v}" class="${d.stake===(v==='all'?bal:v)?'on':''}">${v==='all'?'Tout':v}</button>`;
+    else{const bal=balanceOf(mine,m.id),cap=Math.min(bal,BO_MAXBET);d.stake=Math.max(0,Math.min(d.stake,cap));
+      const chip=v=>`<button data-stk="${v}" class="${d.stake===(v==='all'?cap:v)?'on':''}">${v==='all'?(bal>BO_MAXBET?'Max':'Tout'):v}</button>`;
       me=`<p class="small" style="margin:12px 0 6px">Solde : <b>${boFmt(bal)}</b></p>
       <div class="stakerow"><div class="stepper"><button data-stk="-5" aria-label="moins">−</button><b>${d.stake}</b><button data-stk="+5" aria-label="plus">+</button></div><div class="chips">${[10,25,50].filter(v=>v<=bal).map(chip).join('')}${bal>0?chip('all'):''}</div></div>
       ${d.pick&&d.stake>0?`<p class="small muted" style="margin:6px 0 8px">Gain possible : <b>+${Math.round(d.stake*(od[d.pick]-1))}</b> 🏆</p>`:'<p class="small muted" style="margin:6px 0 8px">Choisis un vainqueur et ta mise.</p>'}
@@ -1350,7 +1350,7 @@ function pronoCard(m){
 }
 async function savePr(){
   const m=cur(),me=myPid(),d=S.prDraft;if(!m||!me||!d||!d.pick||pronoLocked(m))return;
-  const bal=balanceOf(me,m.id),st=Math.min(d.stake,bal);if(!(st>0)){toast('Solde insuffisant.');return}
+  const bal=balanceOf(me,m.id),st=Math.min(d.stake,bal,BO_MAXBET);if(!(st>0)){toast('Solde insuffisant.');return}
   try{await db.doc('pronos/'+m.id+'__'+me).set({matchId:m.id,voter:me,pick:d.pick,stake:st,at:Date.now()});toast('Pari enregistré.')}catch(e){toast(errMsg(e))}
 }
 function pronoStats(){
@@ -1558,7 +1558,7 @@ function vPlayer(pid){
   const coms=[];[...x.log].reverse().forEach(l=>votesOf(l.m.id).forEach(v=>{const c=v.comments&&v.comments[pid];if(c)coms.push({c,m:l.m})}));
   const showAll=S.openCm.has('pl:'+pid);
   const goF=fxOn('gold',pid),gd=e=>Math.ceil((e.end-Date.now())/864e5);
-  return back+`<div class="card"><div class="phero">${(()=>{const a=avatarOf(pid);return a?`<img class="av0${goF?' au':''}" src="${a}" alt="">`:`<div class="av0${goF?' au':''}" aria-hidden="true">${esc((pname(pid,x.last)[0]||'?').toUpperCase())}</div>`})()}<div style="min-width:0"><div class="small muted">Fiche joueur</div><div class="pname"><span>${esc(pname(pid,x.last))}</span>${form(x)}</div><div class="pchips">${goF?`<span class="au">Nom en or · ${gd(goF)} j</span>`:''}${st?`<span>${st}</span>`:''}</div></div></div>
+  return back+`<div class="card"><div class="phero">${(()=>{const a=avatarOf(pid);return a?`<img class="av0${goF?' au':''}" src="${esc(a)}" alt="">`:`<div class="av0${goF?' au':''}" aria-hidden="true">${esc((pname(pid,x.last)[0]||'?').toUpperCase())}</div>`})()}<div style="min-width:0"><div class="small muted">Fiche joueur</div><div class="pname"><span>${esc(pname(pid,x.last))}</span>${form(x)}</div><div class="pchips">${goF?`<span class="au">Nom en or · ${gd(goF)} j</span>`:''}${st?`<span>${st}</span>`:''}</div></div></div>
   <div class="kpis">${k(x.mj,'Matchs')}${k(Math.round(x.wr)+'%','Win rate')}${k(fmt1(x.avg),'Moyenne')}${k(x.motm,'MOTM')}${k(`${x.v}-${x.n}-${x.d}`,'V-N-D')}${k(x.g,'Buts')}${k(x.pd,'Passes D')}${k(x.bestWin,'Meilleure série')}</div>${baseOf(pid)!=null?`<p class="small muted" style="margin:10px 0 0">Note de départ : <b>${fmt1(baseOf(pid))}</b> (compte comme 1 match)</p>`:''}${(()=>{const st=fxOn('stache',pid),go=fxOn('gold',pid),d=e=>Math.ceil((e.end-Date.now())/864e5);
     return (st?`<p class="small" style="margin:6px 0 0">🥸 Moustache offerte par <b>${esc(pname(st.by))}</b> · encore ${d(st)} j</p>`:'')+(fxOn('crown',pid)?`<p class="small" style="margin:6px 0 0">👑 Couronne · encore ${d(fxOn('crown',pid))} j</p>`:'')})()}
   ${myPid()?(pid===myPid()?'':`<button class="btn ghost" data-act="shop" data-p="${pid}" style="margin:12px 0 0">🥸 Moustache · ${SHOP.stache.cost} 🏆</button>`):''}${!S.anon&&pid===myPid()?`<label class="upl">📷 ${avatarOf(pid)?'Changer la photo de profil':'Ajouter une photo de profil'}<input type="file" accept="image/*" data-pp="${pid}"></label>`:''}<button class="btn ghost" data-act="card" data-p="${pid}" style="margin:12px 0 0">📇 Carte joueur</button></div>${curveCard(x)}
@@ -1596,7 +1596,7 @@ function vStats(){
   const cols=[['name','Joueur'],['mj','MJ'],['v','V'],['n','N'],['d','D'],['wr','%V'],['avg','Moy.'],['motm','MOTM'],['g','Buts'],['pd','PD']];
   const val=(x,c)=>c==='name'?pname(x.p,x.last):(x[c]??-1);
   all.sort((a,b)=>{const A=val(a,k),B=val(b,k);const c=k==='name'?String(A).localeCompare(String(B),'fr'):A-B;return c*dir||b.mj-a.mj||String(val(a,'name')).localeCompare(String(val(b,'name')),'fr')});
-  const avHtml=p=>{const a=avatarOf(p);return a?`<img class="av0" src="${a}" alt="">`:`<div class="av0" aria-hidden="true">${esc((pname(p)[0]||'?').toUpperCase())}</div>`};
+  const avHtml=p=>{const a=avatarOf(p);return a?`<img class="av0" src="${esc(a)}" alt="">`:`<div class="av0" aria-hidden="true">${esc((pname(p)[0]||'?').toUpperCase())}</div>`};
   const topCard=()=>{const TT=[['g','Buteurs','Meilleur buteur','buts'],['pd','Passeurs','Meilleur passeur','passes'],['avg','Notes','Meilleure moyenne','/ 10'],['motm','MOTM','Homme du match','MOTM']];
     const t=TT.find(o=>o[0]===S.topTab)||TT[0],key=t[0],fv=v=>key==='avg'?fmt1(v):v;
     const l=all.filter(x=>x[key]>0).sort((a,b)=>b[key]-a[key]||(key==='g'?b.pd-a.pd:b.g-a.g)||b.mj-a.mj).slice(0,6);
@@ -1620,7 +1620,7 @@ function vStats(){
 function photoBlock(m){
   const ph=S.photos[m.id];
   if(ph===undefined){S.photos[m.id]='loading';db.doc('meta/photo_'+m.id).get().then(d=>{S.photos[m.id]=d.exists?d.data().data:null;schedule()}).catch(()=>{S.photos[m.id]=null;schedule()})}
-  const img=ph&&ph!=='loading'?`<div class="phwrap"><img class="photo" src="${ph}" alt="Photo du match"><button class="phx" data-act="delPhoto" data-m="${m.id}" aria-label="Supprimer la photo">×</button></div>`:'';
+  const img=ph&&ph!=='loading'?`<div class="phwrap"><img class="photo" src="${esc(ph)}" alt="Photo du match"><button class="phx" data-act="delPhoto" data-m="${m.id}" aria-label="Supprimer la photo">×</button></div>`:'';
   if(S.anon)return img.replace(/<button class="phx"[^>]*>×<\/button>/,'');
   return img+`<label class="upl">📷 ${img?'Changer la photo':'Ajouter une photo du match'}<input type="file" accept="image/*" data-photo="${m.id}"></label>`;
 }
@@ -1707,7 +1707,7 @@ async function createMatch(){
   const mid=rid('m'),all=[...g('A'),...g('sA'),...g('B'),...g('sB')];
   const names={};
   for(const p of all)names[p]=pname(p);
-  const m={createdAt:Date.now(),date:S.setup.date||todayISO(),teamNames:{A:S.setup.nameA.trim()||'Équipe A',B:S.setup.nameB.trim()||'Équipe B'},
+  const m={createdAt:Date.now(),date:S.setup.date||todayISO(),teamNames:{A:S.setup.nameA.trim()||'Orange',B:S.setup.nameB.trim()||'Bleus'},
     teams:{A:g('A'),B:g('B')},subs:{A:g('sA'),B:g('sB')},names,status:'open'};m.odds=computeOdds(m.teams,m.subs);
   try{
     await db.doc('matches/'+mid).set(m);
@@ -1900,7 +1900,7 @@ $v.addEventListener('click',e=>{
   const sk=e.target.closest('[data-sk]');if(sk){const c=sk.dataset.sk;S.statSort=S.statSort.k===c?{k:c,dir:-S.statSort.dir}:{k:c,dir:c==='name'?1:-1};render();return}
   const hi=e.target.closest('[data-hist]');if(hi){S.openHist=S.openHist===hi.dataset.hist?null:hi.dataset.hist;render();return}
   const pk=e.target.closest('[data-pk]');if(pk&&S.prDraft){S.prDraft.pick=pk.dataset.pk;render();return}
-  const stk=e.target.closest('[data-stk]');if(stk&&S.prDraft){const m=cur(),bal=m?balanceOf(myPid(),m.id):0,v=stk.dataset.stk;
+  const stk=e.target.closest('[data-stk]');if(stk&&S.prDraft){const m=cur(),bal=m?Math.min(balanceOf(myPid(),m.id),BO_MAXBET):0,v=stk.dataset.stk;
     S.prDraft.stake=v==='all'?bal:/^[+-]/.test(v)?Math.max(0,Math.min(bal,S.prDraft.stake+parseInt(v,10))):Math.min(bal,parseInt(v,10));render();return}
   const h2=e.target.closest('[data-h2h]');if(h2){return}
   const b=e.target.closest('[data-act]');if(!b)return;
@@ -1910,7 +1910,7 @@ $v.addEventListener('click',e=>{
     confirmBox(`Retirer ${esc(pl?pl.name:'ce joueur')} de la liste ? Ses statistiques restent.`,'Retirer',async()=>{try{delete S.setup.assign[p];await db.doc('players/'+p).update({guest:false});render()}catch(e){toast(errMsg(e))}})}
   else if(act==='kickP'){excludePlayer(b.dataset.p)}
   else if(act==='create'){b.disabled=true;createMatch().finally(()=>{b.disabled=false})}
-  else if(act==='closeVotes'){const v=new Set(votesOf((cur()||{}).id).map(x=>x.voter)).size,n=cur()?parts(cur()).length:0;confirmBox(`Clôturer les votes (${v}/${n} ont voté) ? Plus personne ne pourra noter.`,'Clôturer',closeVotes)}
+  else if(act==='closeVotes')adminGate(()=>{const v=new Set(votesOf((cur()||{}).id).map(x=>x.voter)).size,n=cur()?parts(cur()).length:0;confirmBox(`Clôturer les votes (${v}/${n} ont voté) ? Plus personne ne pourra noter.`,'Clôturer',closeVotes)})
   else if(act==='close'){const m=cur();if(!m)return;const g=goalScore(m);S.closeForm={sA:String(g.A),sB:String(g.B),winner:g.A>g.B?'A':g.B>g.A?'B':'N'};const f=S.closeForm;
     confirmBox(`Terminer le match sur le score ${esc(tname(m,'A'))} ${f.sA} – ${f.sB} ${esc(tname(m,'B'))} ?`,'Terminer et ouvrir les votes',closeMatch)}
   else if(act==='lastTeams')lastTeams();

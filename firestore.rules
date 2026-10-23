@@ -1,0 +1,239 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isUser() { return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+    function gpath(g) { return /databases/$(database)/documents/groups/$(g); }
+    function mpath(g) { return /databases/$(database)/documents/groups/$(g)/members/$(request.auth.uid); }
+    function ppath(g) { return /databases/$(database)/documents/groups/$(g)/private/admin; }
+    function grp(g) { return get(gpath(g)).data; }
+    function isMember(g) {
+      return signedIn() && exists(mpath(g)) && get(mpath(g)).data.k == grp(g).k
+        && !(request.auth.uid in grp(g).get('banned', []));
+    }
+    function isOwner(g) { return isMember(g) && grp(g).get('owner', '') == request.auth.uid; }
+    // Ancien système (mot de passe admin), valable seulement avant la migration des rôles
+    function legacyAdm(g) {
+      return !('roles' in grp(g)) && get(mpath(g)).data.get('adm', '') != ''
+        && (get(mpath(g)).data.adm == grp(g).get('adminHash', '-')
+            || (exists(ppath(g)) && get(mpath(g)).data.adm == get(ppath(g)).data.hash));
+    }
+    function isAdmin(g) {
+      return isMember(g) && (grp(g).get('owner', '') == request.auth.uid
+        || request.auth.uid in grp(g).get('admins', [])
+        || legacyAdm(g));
+    }
+    // Membre avec un compte (les visiteurs sans compte sont en lecture seule)
+    function canWrite(g) { return isUser() && isMember(g); }
+    function myPlayer(g, pid) {
+      return get(/databases/$(database)/documents/groups/$(g)/players/$(pid)).data.get('uid', '') == request.auth.uid;
+    }
+    function matchOf(g, mid) { return get(/databases/$(database)/documents/groups/$(g)/matches/$(mid)).data; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function str(s, max) { return s is string && s.size() <= max; }
+    // Horodatage client à 10 min près de l'heure serveur (empêche d'antidater un achat ou un match)
+    function recent(t) {
+      return t is int && t > request.time.toMillis() - 600000 && t < request.time.toMillis() + 600000;
+    }
+    // Image en data URL uniquement : bloque l'injection de code dans l'attribut src
+    function imageOk(d) {
+      return d.keys().hasOnly(['data', 'at']) && d.data is string && d.data.size() <= 1000000
+        && d.data.matches('data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+');
+    }
+    function inMatch(m, pid) {
+      return pid in m.teams.A || pid in m.teams.B
+        || pid in m.get('subs', {}).get('A', []) || pid in m.get('subs', {}).get('B', []);
+    }
+    // Cotes calculées par computeOdds() : marge de 7 %, nul entre 10 % et 28 %
+    function oddsOk(o) {
+      return o is map && o.keys().hasOnly(['A', 'N', 'B']) && o.keys().hasAll(['A', 'N', 'B'])
+        && o.A is number && o.N is number && o.B is number
+        && o.A >= 1.05 && o.B >= 1.05 && o.N >= 3.3 && o.N <= 9.5
+        // 1/A + 1/N + 1/B entre 1 et 1,1, sans division : N·B + A·B + A·N comparé à A·N·B
+        && o.N * o.B + o.A * o.B + o.A * o.N >= o.A * o.N * o.B
+        && o.N * o.B + o.A * o.B + o.A * o.N <= 1.1 * o.A * o.N * o.B;
+    }
+
+    // Ancienne version (avant les groupes) : fermée, les données ont été importées dans les groupes.
+    // Aucune règle = aucun accès ; les documents restent en base.
+
+    // Comptes : pseudo unique -> email
+    match /usernames/{u} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && u.size() <= 40
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && str(request.resource.data.email, 254);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+    match /users/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['pseudo', 'email', 'groups', 'createdAt']);
+      allow update: if signedIn() && request.auth.uid == uid
+        && changed().hasOnly(['pseudo', 'email', 'groups', 'createdAt']);
+    }
+
+    match /groups/{g} {
+      // Personne ne peut exclure le créateur ; seul le créateur peut exclure un admin
+      function banOk() {
+        let added = request.resource.data.get('banned', []).removeAll(resource.data.get('banned', []));
+        return !(resource.data.get('owner', '') in added)
+          && (isOwner(g) || !added.hasAny(resource.data.get('admins', [])));
+      }
+
+      allow read: if isMember(g);
+      // Créer un groupe : compte obligatoire, le créateur est l'admin principal
+      allow create: if isUser() && request.resource.data.owner == request.auth.uid
+        && request.resource.data.keys().hasOnly(['name', 'k', 'owner', 'admins', 'roles', 'createdAt'])
+        && str(request.resource.data.name, 80)
+        && request.resource.data.get('admins', []).size() == 0;
+      allow update: if banOk() && (
+          // le créateur gère tout sauf la propriété
+          (isOwner(g) && !changed().hasAny(['owner']))
+          // les admins nommés : nom, mot de passe… mais pas la liste des admins
+       || (isAdmin(g) && !changed().hasAny(['owner', 'admins', 'roles']))
+          // migration unique depuis l'ancien mot de passe admin
+       || (isMember(g) && legacyAdm(g) && changed().hasOnly(['admins', 'roles', 'owner', 'adminHash'])
+           && (!('owner' in resource.data) || request.resource.data.owner == resource.data.owner)));
+      allow delete: if isOwner(g);
+
+      match /private/{d} {
+        allow read, write: if false;
+      }
+
+      // Membres : on rejoint en prouvant le mot de passe du groupe ; impossible de se donner l'admin
+      match /members/{uid} {
+        allow read: if isMember(g);
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.k == grp(g).k
+          && !(uid in grp(g).get('banned', []))
+          && !('adm' in request.resource.data);
+        allow update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.k == grp(g).k
+          && !(uid in grp(g).get('banned', []))
+          && request.resource.data.get('adm', '') == resource.data.get('adm', '');
+        allow delete: if (signedIn() && request.auth.uid == uid) || isAdmin(g);
+      }
+
+      // Anciens liens téléphone-joueur : lecture seule (migration)
+      match /claims/{pid} {
+        allow read: if isMember(g);
+        allow delete: if isAdmin(g);
+      }
+
+      // Votes : un seul document par votant et par match (id = match__votant),
+      // notes des autres participants uniquement, pendant les votes ; suppression réservée aux admins
+      match /votes/{id} {
+        function voteOk() {
+          let v = request.resource.data;
+          return v.keys().hasOnly(['matchId', 'voter', 'ratings', 'comments', 'updatedAt'])
+            && id == v.matchId + '__' + v.voter
+            && v.ratings is map && v.ratings.size() <= 40 && !(v.voter in v.ratings)
+            && (!('comments' in v) || (v.comments is map && v.comments.size() <= 40));
+        }
+        allow read: if isMember(g);
+        allow create, update: if canWrite(g) && voteOk() && (isAdmin(g)
+          || (myPlayer(g, request.resource.data.voter)
+              && matchOf(g, request.resource.data.matchId).status == 'voting'
+              && inMatch(matchOf(g, request.resource.data.matchId), request.resource.data.voter)));
+        allow delete: if isAdmin(g);
+      }
+
+      // Paris : un par joueur et par match, mise plafonnée, avant le coup d'envoi et avant le premier but
+      match /pronos/{id} {
+        function pronoOk() {
+          let x = request.resource.data;
+          let m = matchOf(g, x.matchId);
+          return x.keys().hasOnly(['matchId', 'voter', 'pick', 'stake', 'at'])
+            && id == x.matchId + '__' + x.voter
+            && x.pick in ['A', 'N', 'B']
+            && x.stake is int && x.stake >= 1 && x.stake <= 1000
+            && m.status == 'open' && m.get('timer', null) == null
+            && m.get('goals', []).size() == 0;
+        }
+        allow read: if isMember(g);
+        allow create, update: if canWrite(g) && myPlayer(g, request.resource.data.voter) && pronoOk();
+        allow delete: if isAdmin(g) || (canWrite(g) && myPlayer(g, resource.data.voter));
+      }
+
+      // Joueurs : on ne peut lier un joueur qu'à soi-même ; nom, note de départ et exclusion réservés aux admins
+      match /players/{id} {
+        allow read: if isMember(g);
+        allow create: if canWrite(g)
+          && request.resource.data.keys().hasOnly(['name', 'createdAt', 'guest', 'uid', 'base'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 60
+          && request.resource.data.get('uid', request.auth.uid) == request.auth.uid
+          && (!('base' in request.resource.data) || isAdmin(g));
+        allow update: if canWrite(g) && (changed().hasOnly(['guest', 'uid']) || isAdmin(g)) && (
+             request.resource.data.get('uid', '') == resource.data.get('uid', '')
+          || (resource.data.get('uid', '') == '' && request.resource.data.get('uid', '') == request.auth.uid)
+          || (request.resource.data.get('uid', '') == '' && (resource.data.get('uid', '') == request.auth.uid || isAdmin(g))));
+        allow delete: if isAdmin(g);
+      }
+
+      // Matchs : en cours = buts, chrono et score pour tous les membres avec compte ;
+      // équipes, cotes et clôture des votes = admins seulement
+      match /matches/{id} {
+        function createOk() {
+          let m = request.resource.data;
+          return m.status == 'open' && recent(m.createdAt) && oddsOk(m.odds)
+            && !m.keys().hasAny(['results', 'motm', 'score', 'winner', 'timer', 'goals', 'closedAt']);
+        }
+        function memberUpdateOk() {
+          let n = request.resource.data;
+          return resource.data.status == 'open'
+            && changed().hasOnly(['goals', 'timer', 'status', 'winner', 'score', 'endedAt'])
+            && n.status in ['open', 'voting']
+            // le chrono ne peut pas être remis à zéro (ça rouvrirait les paris)
+            && (resource.data.get('timer', null) == null || n.get('timer', null) != null)
+            && (n.status == 'open' || (n.score.A is int && n.score.B is int
+                && n.score.A >= 0 && n.score.A <= 99 && n.score.B >= 0 && n.score.B <= 99
+                && n.winner in ['A', 'N', 'B']));
+        }
+        allow read: if isMember(g);
+        allow create: if canWrite(g) && (isAdmin(g) || createOk());
+        allow update: if canWrite(g) && (isAdmin(g) || memberUpdateOk());
+        allow delete: if isAdmin(g) || (canWrite(g) && resource.data.status == 'open');
+      }
+
+      // Photo de profil : chacun ne met que la sienne (un admin peut seulement la retirer)
+      match /avatars/{pid} {
+        allow read: if isMember(g);
+        allow create, update: if canWrite(g) && myPlayer(g, pid) && imageOk(request.resource.data);
+        allow delete: if canWrite(g) && (myPlayer(g, pid) || isAdmin(g));
+      }
+
+      // Boutique : achats en son nom (or et couronne = soi-même, moustache = un autre), à l'heure actuelle
+      match /shop/{id} {
+        allow read: if isMember(g);
+        allow create: if canWrite(g) && myPlayer(g, request.resource.data.buyer)
+          && request.resource.data.keys().hasOnly(['buyer', 'target', 'item', 'cost', 'at'])
+          && recent(request.resource.data.at)
+          && ((request.resource.data.item == 'gold' && request.resource.data.cost == 1000
+               && request.resource.data.target == request.resource.data.buyer)
+           || (request.resource.data.item == 'crown' && request.resource.data.cost == 1500
+               && request.resource.data.target == request.resource.data.buyer)
+           || (request.resource.data.item == 'stache' && request.resource.data.cost == 2000
+               && request.resource.data.target != request.resource.data.buyer));
+        allow delete: if isAdmin(g);
+      }
+
+      // meta/state : match en cours ; meta/next : prochain match ; meta/photo_* : photo d'un match ;
+      // le reste (config…) : admins seulement
+      match /meta/{id} {
+        allow read: if isMember(g);
+        allow create, update: if (isAdmin(g) && !id.matches('photo_.*')) || (canWrite(g) && (
+             (id == 'state' && request.resource.data.keys().hasOnly(['currentMatchId']))
+          || (id == 'next' && request.resource.data.keys().hasOnly(['at', 'place', 'by'])
+              && request.resource.data.by == request.auth.uid
+              && str(request.resource.data.at, 40) && str(request.resource.data.get('place', ''), 60))
+          || (id.matches('photo_.+') && imageOk(request.resource.data))));
+        allow delete: if isAdmin(g) || (canWrite(g) && (id == 'next' || id.matches('photo_.+')));
+      }
+    }
+  }
+}
