@@ -1688,7 +1688,7 @@ $v.addEventListener('keydown',e=>{
 });
 
 /* ---------- Données (Firestore) ---------- */
-function markReady(k){S.got[k]=1;if(!S.ready&&S.got.p&&S.got.m&&S.got.v&&S.got.s&&S.got.c){S.ready=true;setTimeout(()=>{autoVoter();maybeAutoJoin();migrateRoles();schedule()},0)}}
+function markReady(k){S.got[k]=1;if(!S.ready&&S.got.p&&S.got.m&&S.got.v&&S.got.s&&S.got.c){S.ready=true;setTimeout(()=>{autoVoter();maybeAutoJoin();migrateRoles();autoSeed();schedule()},0)}}
 function onErr(e,w){console.error(w,e);S.dbErr=(w?w+' : ':'')+((e&&(e.code||e.message))||'');if(e&&e.code==='permission-denied'&&S.group){lostAccess();return}S.noDb=true;render();
   clearTimeout(onErr.t);if((onErr.n=(onErr.n||0)+1)<=5)onErr.t=setTimeout(()=>{if(S.group)connect({...S.group})},4000)}
 let fs=null,raw=null,unsubs=[],auth=null;
@@ -1783,7 +1783,7 @@ function subscribe(g){
     schedule()},e=>onErr(e,'groupe')));
   unsubs.push(db.doc('members/'+S.uid).onSnapshot(d=>{S.me=d.exists?d.data():null;
     syncAdm();migrateRoles();maybeAutoJoin();schedule()},e=>onErr(e,'membre')));
-  unsubs.push(db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));markReady('p');autoVoter();maybeAutoJoin();schedule()},e=>onErr(e,'players')));
+  unsubs.push(db.collection('players').onSnapshot(s=>{S.players=s.docs.map(d=>({id:d.id,...d.data()}));markReady('p');autoVoter();maybeAutoJoin();autoSeed();schedule()},e=>onErr(e,'players')));
   unsubs.push(db.collection('matches').onSnapshot(s=>{S.matches=s.docs.map(d=>({id:d.id,...d.data()}));markReady('m');
     const m=cur();if(S.voter&&(!m||m.id!==S.voter.mid||m.status!=='voting')){S.voter=null;S.draft=null}
     autoVoter();schedule()},e=>onErr(e,'matches')));
@@ -1892,8 +1892,7 @@ function excludePlayer(pid,after){
   confirmBox(p.uid?`Exclure <b>${esc(p.name)}</b> du groupe ? Il ne pourra plus voir ni rejoindre le groupe. Ses stats restent.`:`Retirer <b>${esc(p.name)}</b> de la liste ? Ses stats restent.`,p.uid?tr('Exclure'):tr('Retirer'),async()=>{
     try{if(p.uid)await banUid(p.uid);await db.doc('players/'+pid).update(p.uid?{out:true,guest:false}:{guest:false});delete S.setup.assign[pid];toast(p.uid?tr('Membre exclu.'):tr('Joueur retiré.'));if(after)after()}catch(e){toast(errMsg(e))}})}
 const SEED_NOTES=[['Romain',3.857143],['Youcef',2.75],['Omar',2.964286],['Moha hadji',3.5],['Sofiane',3.571429],['Karim',2.464286],['Galoul',4.178571],['Damjan',1.857143],['Manuel',4.333333],['Burak',3.357143],['Tony',2.25],['Redouane',4.928571],['Marco',4.785714],['Thomas',2.866667],['Naoufel',3.285714],['Sajid',3.464286],['Yves',3.3],['Konde',2]];
-function seedModal(){
-  if(!isGAdmin())return;
+function seedRows(){
   const nn=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   const ps=S.players.filter(p=>!p.out).sort((a,b)=>a.name.localeCompare(b.name,'fr')),used=new Set();
   const ALIAS={'marco':'baro','romain':'justroms','thomas':'destru','manuel':'manu','moha hadji':'moha','naoufel':'nowfl','damjan':'shiftdamjan','tony':'tony_m','karim':'rimkovinho'};
@@ -1901,6 +1900,22 @@ function seedModal(){
     let p=ps.find(x=>nn(x.name)===k)||ps.find(x=>nn(x.name)===f)||ps.find(x=>nn(x.name).split(/\s+/)[0]===f)||ps.find(x=>lev(nn(x.name),k)<=1||lev(nn(x.name),f)<=1);
     return p&&!used.has(p.id)?(used.add(p.id),p.id):''};
   const rows=SEED_NOTES.map(([n,v])=>({n,v:Math.round(v*20)/10,p:guess(n)}));
+  return {rows,ps};
+}
+let seedBusy=false;
+async function autoSeed(){
+  if(seedBusy||S.anon||!S.ready||!S.group||!isGAdmin())return;
+  if((S.meta&&S.meta.seeded)||S.players.some(p=>typeof p.base==='number'))return;
+  seedBusy=true;
+  try{const {rows}=seedRows();let n=0;
+    for(const r of rows)if(r.p){await db.doc('players/'+r.p).update({base:r.v});n++}
+    await db.doc('meta/state').set({seeded:true},{merge:true});
+    if(n)toast((LANG==='en'?'Starting ratings imported: ':'Notes de départ importées : ')+n+(LANG==='en'?' players.':' joueurs.'));
+  }catch(e){console.error(e);toast(errMsg(e))}finally{seedBusy=false}
+}
+function seedModal(){
+  if(!isGAdmin())return;
+  const {rows,ps}=seedRows();
   const opt=sel=>`<option value="">— Ignorer —</option><option value="+"${sel==='+'?' selected':''}>+ Créer comme invité</option>`+ps.map(p=>`<option value="${p.id}"${p.id===sel?' selected':''}>${esc(p.name)}</option>`).join('');
   openModal(`<h2>📥 Notes de départ</h2><p class="small muted" style="margin-top:0">Notes du premier sondage, converties sur 10. Chaque note compte comme 1 match, puis les notes des matchs prennent le relais. Vérifie qui est qui.</p>
   <div class="mlist">${rows.map((r,i)=>`<div class="mrow"><span><b>${esc(r.n)}</b> ${fmt1(r.v)}${r.p?'':' <small class="mtag gst">à vérifier</small>'}</span><select data-si="${i}" style="max-width:52%;font-size:15px;padding:6px;border-radius:8px">${opt(r.p)}</select></div>`).join('')}</div>
