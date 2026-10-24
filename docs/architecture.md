@@ -13,7 +13,7 @@
 **Pourquoi ce choix :**
 - On garde les comptes, les mots de passe et la base existants, donc la migration se fait sans risque.
 - On ne paie ni la bande passante du front ni celle des images.
-- Coût estimé : **≈ 2 €/mois à 10 000 utilisateurs, ≈ 30 € à 100 000, ≈ 185 € à 500 000**. Le seuil de 100 €/mois tombe vers 270 000 utilisateurs, et le premium doit être prêt avant.
+- Coût estimé : **≈ 4 €/mois à 10 000 utilisateurs, ≈ 32 € à 100 000, ≈ 185 € à 500 000**. Le seuil de 100 €/mois tombe vers 270 000 utilisateurs, et le premium doit être prêt avant.
 
 **Ce qui compte le plus, quelle que soit la stack :**
 - Soldes, cotes, gains, notes et homme du match calculés **sur le serveur**.
@@ -75,8 +75,8 @@ Hypothèses communes :
 
 | Critère | **A. Firebase + Cloudflare** (recommandé) | B. Supabase (Francfort) + Cloudflare Pages | C. Tout Cloudflare (Workers, D1, Durable Objects, R2) |
 |---|---|---|---|
-| Coût à 10 k | **≈ 2 €** (quotas gratuits) | ≈ 25 € (l'offre Pro est nécessaire pour les sauvegardes et pour éviter la mise en veille) | ≈ 5 € |
-| Coût à 100 k | **≈ 30 €** | ≈ 100–130 € | ≈ 15 € |
+| Coût à 10 k | **≈ 4 €** | ≈ 25 € (l'offre Pro est nécessaire pour les sauvegardes et pour éviter la mise en veille) | ≈ 5 € |
+| Coût à 100 k | **≈ 32 €** | ≈ 100–130 € | ≈ 15 € |
 | Coût à 500 k | **≈ 185 €** | ≈ **1 700 €**, dont environ 1 200 € d'Auth (0,003 $ par utilisateur actif au-delà de 100 k) | ≈ 60–100 € |
 | Charge de dev V1 | **≈ 45 j** | ≈ 55 j (migration des mots de passe comprise) | ≈ 80 j (Auth, temps réel et hors ligne à écrire) |
 | Temps réel | Natif (`onSnapshot`), facturé à la lecture | Natif, facturé à la connexion et au message | WebSocket sur Durable Objects, à coder |
@@ -268,14 +268,14 @@ Les calculs eux-mêmes (stats, cotes, équilibrage, notes, badges) sont des **fo
 
 | Poste | 10 k | 100 k | 500 k |
 |---|---|---|---|
-| Firestore lectures (≈ 400 par utilisateur et par mois) | ≈ 1 € | ≈ 21 € | ≈ 110 € |
-| Firestore écritures et stockage | 0 € | ≈ 5 € | ≈ 28 € |
+| Firestore lectures (≈ 400 par utilisateur et par mois ; base `ezfoot` sans quota gratuit, voir `migration.md` 4.1) | ≈ 2 € | ≈ 22 € | ≈ 110 € |
+| Firestore écritures et stockage | ≈ 1 € | ≈ 6 € | ≈ 28 € |
 | Cloud Functions | 0 € | ≈ 3 € | ≈ 18 € |
 | R2 (stockage, sans frais de sortie) | 0 € | ≈ 0,5 € | ≈ 2 € |
 | Cloudflare Pages, DNS, Turnstile | 0 € | 0 € | 0 € |
 | Sentry (Developer, puis Team) | 0 € | 0 € | ≈ 26 € |
 | Domaine ezfoot.app (≈ 14 $/an) | ≈ 1 € | ≈ 1 € | ≈ 1 € |
-| **Total** | **≈ 2 €** | **≈ 30 €** | **≈ 185 €** |
+| **Total** | **≈ 4 €** | **≈ 32 €** | **≈ 185 €** |
 
 **Garde-fous**
 - Alertes de budget Google Cloud à 5, 25, 50 et 100 €.
