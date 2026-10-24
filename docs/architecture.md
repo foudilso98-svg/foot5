@@ -428,7 +428,7 @@ Supabase et Vercel ne sont **pas nécessaires**.
 5. ✅ « Paris » renommé « Pronostics » dans l'interface
 6. ✅ Invitations par jeton révocable, le mot de passe du groupe devenant facultatif
 7. ✅ Passage à l'offre Blaze, avec une alerte de budget et un plafond : voir `docs/migration.md`, phase 0
-8. ⏳ **À valider** : e-mails d'authentification envoyés par EZFOOT via **Brevo**, page d'action sur ezfoot.app, `contact@ezfoot.app` via Cloudflare Email Routing (§3.6, annexe B)
+8. ✅ E-mails d'authentification envoyés par EZFOOT via **Brevo**, derrière une interface `Mailer` commune pour pouvoir changer de service ; page d'action sur ezfoot.app ; `contact@ezfoot.app` via Cloudflare Email Routing (§3.6, annexe B). **Livrés avant la V1, dans l'app actuelle, juste après le passage en Blaze.**
 
 ---
 
