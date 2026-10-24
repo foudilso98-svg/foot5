@@ -685,8 +685,7 @@ const firebaseConfig={
 /* =========================================================================================================== */
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {getFirestore,initializeFirestore,persistentLocalCache,persistentMultipleTabManager,memoryLocalCache,doc,collection,setDoc,updateDoc,deleteDoc,getDocs,getDoc,onSnapshot,arrayUnion,arrayRemove,deleteField} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {getAuth,signInAnonymously,onAuthStateChanged,EmailAuthProvider,linkWithCredential,signInWithEmailAndPassword,signOut,updateProfile,reauthenticateWithCredential,deleteUser} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {getFunctions,httpsCallable} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+import {getAuth,signInAnonymously,onAuthStateChanged,EmailAuthProvider,linkWithCredential,signInWithEmailAndPassword,sendPasswordResetEmail,signOut,updateProfile,reauthenticateWithCredential,deleteUser} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const S={players:[],matches:[],votes:[],meta:null,config:{},noConf:false,got:{p:0,m:0,v:0,s:0,c:0},ready:false,noDb:false,isOrg:false,
   tab:'match',voter:null,draft:null,loginErr:'',voteMsg:null,
@@ -869,7 +868,7 @@ const ENRX=[
 [/^⭐ Homme du match : (.+)$/,'⭐ Man of the match: $1'],[/^· tu es admin$/,'· you are admin'],[/^\+(\d+) remp\.$/,'+$1 sub'],[/^(\d+) buts?$/,(m,n)=>`${n} goal${n>1?'s':''}`],
 [/^Code : (.+)$/,'Code: $1'],[/^(\d+)\/(\d+) paris gagnés$/,'$1/$2 bets won'],[/^Départ : (\d+) 🏆 Ballons d’or\. \+(\d+) par match joué\. Gagné = mise × cote\.$/,'Start: $1 🏆 golden balls. +$2 per match played. Win = stake × odds.'],[/^Nul · (\d+)$/,'Draw · $1'],[/^(.+) · (\d+)$/,(m,a,b)=>tr(a)+' · '+b],[/^« (.+) » ajouté comme invité\.$/,'“$1” added as a guest.'],[/^C’est (.+)$/,'It’s $1'],[/^Pointillés : moyenne (.+)$/,'Dashed: average $1'],
 [/^(\d+) match(s?) l’un contre l’autre\.$/,(m,n)=>`${n} match${n>1?'es':''} against each other.`],[/^Ensemble :$/,'Together:'],[/^\(V-N-D\) sur (\d+) match(s?)\.$/,(m,n)=>`(W-D-L) in ${n} match${n>1?'es':''}.`],
-[/^(\d+)\/(\d+) bons · (\d+) exacts?$/,(m,a,b,c)=>`${a}/${b} right · ${c} exact`],[/^Carte de (.+)$/,'Card of $1'],[/^Tu es ajouté au groupe comme (.+)\.$/,'You were added to the group as $1.'],[/^Compte créé\. Bienvenue (.+) ! Confirme ton adresse dans l’e-mail reçu\.$/,'Account created. Welcome $1! Confirm your address in the email you received.'],[/^(.+) n’a pas joué ce match\.$/,'$1 didn’t play this match.'],[/^Ce téléphone est lié à (.+)\.$/,'This phone is linked to $1.'],
+[/^(\d+)\/(\d+) bons · (\d+) exacts?$/,(m,a,b,c)=>`${a}/${b} right · ${c} exact`],[/^Carte de (.+)$/,'Card of $1'],[/^Tu es ajouté au groupe comme (.+)\.$/,'You were added to the group as $1.'],[/^Compte créé\. Bienvenue (.+) !$/,'Account created. Welcome $1!'],[/^(.+) n’a pas joué ce match\.$/,'$1 didn’t play this match.'],[/^Ce téléphone est lié à (.+)\.$/,'This phone is linked to $1.'],
 [/^Tu es$/,'Are you'],[/^\? Ce téléphone sera lié à (.+) pour tous les votes\.$/,'? This phone will be linked to $1 for all votes.'],[/^Délier ce téléphone de (.+) \?$/,'Unlink this phone from $1?'],
 [/^Délier (.+) de son téléphone \? Il pourra se relier depuis un autre téléphone\.$/,'Unlink $1 from their phone? They can link again from another phone.'],[/^Erreur de connexion \((.*)\)\. Vérifie le réseau\.$/,'Sign-in error ($1). Check your connection.'],[/^Buts : (.+)$/,'Goals: $1'],[/^Identifiant : (.+)$/,'ID: $1']
 ];
@@ -1992,7 +1991,7 @@ $v.addEventListener('keydown',e=>{
 function markReady(k){S.got[k]=1;if(!S.ready&&S.got.p&&S.got.m&&S.got.v&&S.got.s&&S.got.c){S.ready=true;setTimeout(()=>{autoVoter();maybeAutoJoin();migrateRoles();autoSeed();schedule()},0)}}
 function onErr(e,w){console.error(w,e);S.dbErr=(w?w+' : ':'')+((e&&(e.code||e.message))||'');if(e&&e.code==='permission-denied'&&S.group){lostAccess();return}S.noDb=true;render();
   clearTimeout(onErr.t);if((onErr.n=(onErr.n||0)+1)<=5)onErr.t=setTimeout(()=>{if(S.group)connect({...S.group})},4000)}
-let fs=null,raw=null,unsubs=[],auth=null,fns=null;
+let fs=null,raw=null,unsubs=[],auth=null;
 const GK='foot5_groups',GC='foot5_cur';
 function myGroups(){try{const l=JSON.parse(LS.get(GK)||'[]');return Array.isArray(l)?l:[]}catch(e){return []}}
 function saveGroups(l){LS.set(GK,JSON.stringify(l))}
@@ -2307,8 +2306,7 @@ function signupForm(){
     S.anon=false;S.pseudo=p;S.email=em;
     const groups={};myGroups().forEach(g=>{groups[g.id]={name:g.name||g.id}});
     try{await raw.doc('users/'+S.uid).set({pseudo:p,email:em,groups,createdAt:Date.now()},{merge:true})}catch(_){}
-    httpsCallable(fns,'sendVerificationEmail')({lang:LANG}).catch(e=>console.error(e));
-    closeModal();render();toast('Compte créé. Bienvenue '+p+' ! Confirme ton adresse dans l’e-mail reçu.');maybeAutoJoin();
+    closeModal();render();toast('Compte créé. Bienvenue '+p+' !');maybeAutoJoin();
   });
 }
 async function resolveEmail(id){
@@ -2335,9 +2333,8 @@ function loginForm(){
   });
   $m.querySelector('#lforgot').onclick=async()=>{
     const id=val('lid'),err=$m.querySelector('#ferr');if(!id){err.textContent='Saisis ton pseudo ou ton email.';return}
-    // envoyé par EZFOOT (noreply@ezfoot.app) ; la réponse est la même que le compte existe ou non
-    try{await httpsCallable(fns,'requestPasswordReset')({id,lang:LANG});err.className='msg ok';err.textContent='Si le compte existe, un email de réinitialisation a été envoyé.'}
-    catch(e){err.textContent=errMsg(e)}
+    try{const em=await resolveEmail(id);if(em)await sendPasswordResetEmail(auth,em);err.className='msg ok';err.textContent='Si le compte existe, un email de réinitialisation a été envoyé.'}
+    catch(e){err.textContent=authErr(e)}
   };
 }
 async function globalStats(){
@@ -2427,7 +2424,7 @@ $b.addEventListener('click',e=>{if(e.target.closest('[data-tomatch]')){S.tab='ma
 (async()=>{
   if(!firebaseConfig.projectId||firebaseConfig.projectId.includes('REMPLACER')){S.noConf=true;render();return}
   let app;
-  try{app=initializeApp(firebaseConfig);fns=getFunctions(app,'europe-west1');
+  try{app=initializeApp(firebaseConfig);
     try{fs=initializeFirestore(app,{localCache:memoryLocalCache()})}catch(_){fs=getFirestore(app)}
   }catch(e){onErr(e);return}
   const wrapDoc=p=>({
