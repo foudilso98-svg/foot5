@@ -136,7 +136,7 @@ Principes :
 | `groups/{g}/invites/{id}` | empreinte du jeton, `expiresAt`, `maxUses`, `uses` | admins, via une fonction |
 | `groups/{g}/players/{pid}` | nom, `uid?`, invité, note de départ, `avatarKey` | membres (nom, invité) ; admins |
 | `groups/{g}/matches/{mid}` | voir le détail ci-dessous | membres pendant le direct (événements, chrono) ; fonctions pour le reste |
-| `…/matches/{mid}/votes/{pid}` | notes, commentaires | le votant pendant les votes ; visible seulement du votant et des admins jusqu'à la clôture |
+| `…/matches/{mid}/votes/{pid}` | notes, commentaires | le votant pendant les votes ; visible seulement du votant et des admins jusqu'à la clôture. Le compteur « X/Y ont voté » reste visible de tous grâce à `matches.votedPids[]`, que la fonction met à jour sans jamais exposer les notes |
 | `…/matches/{mid}/predictions/{pid}` | choix, mise, gain | fonction `placePrediction` |
 | `groups/{g}/wallets/{pid}` | `balance`, `version` | **fonctions uniquement** |
 | `groups/{g}/ledger/{id}` | `pid`, `delta`, `reason` (match, victoire, mvp, prono, boutique, reset, correction), `ref`, `at` | **fonctions uniquement**, ajout seul |
@@ -191,7 +191,7 @@ Chaque fonction est appelable. Elle vérifie le rôle, valide les entrées (zod)
 | `resetBalances` | Admin. Écrit des lignes `reset` dans le journal |
 | `loginWithPseudo` | Vérifie le mot de passe côté serveur et renvoie un *custom token*. **L'e-mail ne sort jamais du serveur** |
 | `joinGroup` | Mot de passe ou jeton d'invitation. 10 essais par heure au maximum |
-| Planifiée (toutes les heures) | **Clôture automatique des votes 48 h après la fin du match** (règle S6) |
+| Planifiée (toutes les heures) | **Clôture automatique des votes 48 h après la fin du match** (règle S6). Un admin peut clôturer plus tôt avec un bouton : c'est la même fonction `closeVotes`, appelée à la main |
 
 Les calculs eux-mêmes (stats, cotes, équilibrage, notes, badges) sont des **fonctions pures** de `packages/domain`. Elles sont couvertes par des tests unitaires. Le client les utilise aussi, mais seulement pour afficher un aperçu.
 
@@ -329,10 +329,49 @@ Supabase et Vercel ne sont **pas nécessaires**.
    - page publique SEO
    - mesure d'audience exemptée de consentement
 
-## 9. Décisions à valider
-1. Stack A : Firebase (Auth, Firestore eur3, Functions) + Cloudflare (Pages, R2) + SvelteKit
-2. Clôture automatique des votes 48 h après le match
-3. Votes visibles par tous seulement **après** la clôture (aujourd'hui, ils sont visibles en direct)
-4. Mise maximale de 1000 Ballons d'or conservée comme règle du jeu
-5. « Paris » renommé « Pronostics » dans l'interface
-6. Invitations par jeton révocable, le mot de passe du groupe devenant facultatif
+## 9. Décisions (validées le 24/10/2026)
+1. ✅ Stack A : Firebase (Auth, Firestore eur3, Functions) + Cloudflare (Pages, R2) + SvelteKit
+2. ✅ Clôture automatique des votes 48 h après le match, **avec un bouton admin pour clôturer avant**
+3. ✅ Notes visibles par tous seulement après la clôture, **mais le compteur « X/Y ont voté » reste visible pendant les votes**
+4. ✅ Mise maximale de 1000 Ballons d'or conservée comme règle du jeu
+5. ✅ « Paris » renommé « Pronostics » dans l'interface
+6. ✅ Invitations par jeton révocable, le mot de passe du groupe devenant facultatif
+7. ✅ Passage à l'offre Blaze, avec une alerte de budget et un plafond : voir `docs/migration.md`, phase 0
+
+---
+
+## Annexe : hypothèses du coût Supabase à 500 k
+
+**Supabase ne facture ni les lectures ni les écritures.** Il facture l'offre, la puissance du serveur (compute), les utilisateurs actifs (MAU) au-delà de 100 000, les connexions et messages Realtime, et la bande passante. Le volume de requêtes ne compte donc que pour choisir la taille du serveur.
+
+Hypothèses : les mêmes que pour Firebase, pour pouvoir comparer.
+
+| Hypothèse | Valeur |
+|---|---|
+| Utilisateurs actifs dans le mois (MAU) | **500 000**, c'est-à-dire tous les inscrits (hypothèse prudente) |
+| Lectures par utilisateur et par jour | ≈ 13 requêtes (≈ 400 par mois), dont le direct |
+| Écritures par utilisateur et par jour | ≈ 1 (≈ 30 par mois : votes, pronostics, buts, achats) |
+| Charge moyenne / pic | 7 M requêtes par jour ≈ 80 req/s en moyenne, ≈ 800 req/s au pic du soir |
+| Connexions Realtime au pic | ≈ 24 000 (3 000 matchs × 8 spectateurs) |
+| Messages Realtime | ≈ 215 000 matchs par mois × 250 messages ≈ 54 M |
+| Bande passante | ≈ 65 Ko par jour et par utilisateur ≈ 1 To par mois |
+
+| Poste (tarifs publics Supabase) | Calcul | $/mois |
+|---|---|---|
+| Offre Pro | forfait | 25 |
+| **Auth MAU** | (500 000 − 100 000 inclus) × 0,00325 $ | **1 300** |
+| Compute Large (pour ≈ 800 req/s) | forfait | 110 |
+| Realtime : connexions | (24 000 − 500 incluses) / 1 000 × 10 $ | 235 |
+| Realtime : messages | (54 M − 5 M inclus) × 2,50 $ / M | 123 |
+| Bande passante | (1 000 − 250 Go inclus) × 0,09 $ | 68 |
+| **Total** | | **≈ 1 860 $ ≈ 1 710 €** |
+
+**Ce qui fait le prix :** l'authentification représente 70 % du total.
+
+**Avec une hypothèse plus réaliste :** si seulement 40 % des inscrits viennent chaque mois (200 000 MAU), les deux options baissent :
+- Supabase passe à environ **800 €** : 325 $ d'Auth, le pic Realtime se réduisant d'autant ;
+- Firebase passe à environ **80 €**.
+
+L'écart reste d'un facteur 8 à 10, parce que Firebase Auth est gratuit (e-mail et anonyme).
+
+**L'option « Firebase Auth + Supabase »** (authentification tierce) est possible. Mais d'après la grille actuelle, ses MAU tiers semblent facturés aussi : ça reste à vérifier avant de la retenir.
