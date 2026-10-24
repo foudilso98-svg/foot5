@@ -13,7 +13,7 @@
 **Pourquoi ce choix :**
 - On garde les comptes, les mots de passe et la base existants, donc la migration se fait sans risque.
 - On ne paie ni la bande passante du front ni celle des images.
-- Coût estimé : **≈ 4 €/mois à 10 000 utilisateurs, ≈ 32 € à 100 000, ≈ 185 € à 500 000**. Le seuil de 100 €/mois tombe vers 270 000 utilisateurs, et le premium doit être prêt avant.
+- Coût estimé : **≈ 4 €/mois à 10 000 utilisateurs, ≈ 59 € à 100 000, ≈ 245 € à 500 000**, e-mails d'authentification compris (§3.6). Le seuil de 100 €/mois tombe vers 190 000 utilisateurs, et le premium doit être prêt avant.
 
 **Ce qui compte le plus, quelle que soit la stack :**
 - Soldes, cotes, gains, notes et homme du match calculés **sur le serveur**.
@@ -215,6 +215,91 @@ Les calculs eux-mêmes (stats, cotes, équilibrage, notes, badges) sont des **fo
 - **Invitations** par jeton aléatoire, révocable, avec date d'expiration et nombre d'utilisations limité. Le mot de passe du groupe reste possible en option.
 - **Aucun secret dans le front.** Les clés R2 et les comptes de service sont dans Secret Manager, et le déploiement passe par GitHub Actions en OIDC.
 
+### 3.6 E-mails d'authentification envoyés par EZFOOT
+
+**Problème.** Firebase refuse de modifier les modèles d'e-mail de ce projet (« Il n'est actuellement pas possible de mettre à jour les modèles d'e-mail de ce projet »). Les e-mails partent donc de `noreply@foot5-68b18.firebaseapp.com` :
+- risque d'arriver en spam ;
+- aucune image de marque ;
+- lien vers une page `firebaseapp.com`.
+
+**Solution.** On n'utilise plus l'envoi de Firebase. Une Cloud Function **génère le lien** avec l'Admin SDK et **envoie elle-même l'e-mail** via un service transactionnel.
+
+| Envoi | Expéditeur | Langue | Présentation |
+|---|---|---|---|
+| `EZFOOT <noreply@ezfoot.app>` | « Répondre à » : `contact@ezfoot.app` | FR ou EN, selon la langue de l'utilisateur | Thème vert nuit, logo texte EZFOOT |
+
+#### Comment ça marche
+
+```
+App (ezfoot.app)                 Cloud Function (europe-west1)                    Service d'e-mail (Brevo)
+« Mot de passe oublié » ──────► requestPasswordReset(email, lang)
+                                  1. App Check + Turnstile
+                                  2. limite : 3/h par adresse, 10/h par IP
+                                  3. compte inexistant → rien, même réponse
+                                  4. generatePasswordResetLink(email)
+                                  5. extrait oobCode → https://ezfoot.app/auth/action?mode=…&oobCode=…&lang=fr
+                                  6. modèle FR/EN ─────────────────────────────► envoi depuis noreply@ezfoot.app
+◄────── toujours : « Si le compte existe, un e-mail a été envoyé. »
+```
+
+| Fonction | Déclenchement | Lien généré (Admin SDK) |
+|---|---|---|
+| `requestPasswordReset` | « Mot de passe oublié », **sans être connecté** | `generatePasswordResetLink` |
+| `sendVerificationEmail` | après l'inscription, ou « Renvoyer l'e-mail » ; **connecté** | `generateEmailVerificationLink` |
+| `requestEmailChange` | changement d'adresse dans Réglages ; **connecté depuis moins de 5 min** | `generateVerifyAndChangeEmailLink` vers la nouvelle adresse, plus un **avis à l'ancienne adresse** |
+
+- **Langue** : `users/{uid}.lang` si le compte existe, sinon la langue de l'interface envoyée avec la demande.
+- **Service d'e-mail interchangeable** : le code n'appelle pas Brevo directement mais une interface `Mailer`. Changer de service (voir le comparatif plus bas) reste un simple réglage.
+
+#### Page d'action sur ezfoot.app
+- On ne garde que le code `oobCode` du lien produit par Firebase. Le lien envoyé pointe vers **`https://ezfoot.app/auth/action`** et n'utilise jamais la page de `firebaseapp.com`. Aucun réglage n'est nécessaire dans la console Firebase.
+- La page de l'app (même design, FR/EN) utilise le SDK client :
+  - **réinitialisation** : `verifyPasswordResetCode` affiche l'adresse masquée (`f•••@gmail.com`), puis `confirmPasswordReset` enregistre le nouveau mot de passe ;
+  - **vérification d'adresse et changement d'adresse** : `applyActionCode`.
+- Les cas d'erreur ont chacun un message clair : lien expiré (validité fixée par Firebase, environ 1 h pour un mot de passe), lien déjà utilisé, lien invalide. Chacun propose un bouton « Renvoyer un e-mail ».
+
+#### Limitation de débit et confidentialité
+- **3 demandes par adresse et par heure** pour chaque action. Le compteur est stocké dans `rateLimits/{sha256(action + adresse)}`, jamais l'adresse elle-même, et il expire grâce à la TTL de Firestore.
+- **10 demandes par IP et par heure**, avec App Check et Turnstile, contre l'envoi massif d'e-mails à une victime.
+- **Toujours la même réponse** : « Si le compte existe, un e-mail a été envoyé ». Le temps de réponse est aussi rendu constant (au moins 800 ms), pour ne pas révéler par le délai quels comptes existent.
+- **Plafond quotidien de 250 envois**, réglable, tant qu'on est sur l'offre gratuite de Brevo (limitée à 300 par jour). Au-delà, l'app affiche la même réponse et une alerte part vers `contact@ezfoot.app`.
+- **Pas de suivi** : suivi des ouvertures et des clics **désactivé** chez Brevo. Les liens ne sont pas réécrits et aucun pixel n'est ajouté (RGPD).
+
+#### Modèles d'e-mail
+- HTML en tableaux sur 600 px, styles en ligne, `color-scheme: dark`.
+- Couleurs : fond `#0B0F0C`, carte `#141A16`, texte `#F2F5F0`, bouton `#3DDC84` avec texte `#06170D`.
+- Logo : `https://ezfoot.app/logo-texte@2x.png`, affiché à 130 × 30.
+- Une version texte brut accompagne toujours la version HTML.
+- 3 modèles × 2 langues, plus l'avis de changement d'adresse.
+- Ils vivent dans `packages/domain/emails` et sont couverts par des tests d'aperçu (rendu figé).
+
+#### Comparatif des services (tarifs publics, vérifiés le 24/10/2026)
+
+| | **Brevo** (recommandé) | Resend | Postmark |
+|---|---|---|---|
+| Offre gratuite | 300 e-mails par jour (≈ 9 000 par mois) | 3 000 par mois, 100 par jour | 100 par mois |
+| 1 000 e-mails par mois | **0 €** | 0 $ | 15 $ (Basic, 10 000 inclus) |
+| 10 000 e-mails par mois | 0 € s'ils restent sous 300 par jour, sinon ≈ 29 $ (Starter 20 000) | 20 $ (Pro, 50 000 inclus) | 15 $ |
+| 100 000 e-mails par mois | ≈ 69–82 $ | 35 $ | 126–177 $ |
+| Hébergement des données | **UE** (France, Allemagne, Belgique) | Envoi possible depuis l'Irlande, mais compte, métadonnées et journaux **aux États-Unis** | **États-Unis**, aucune offre UE prévue |
+| Points forts | Société française, données en UE, offre gratuite large, API et SMTP | API la plus simple, le moins cher en gros volume | Meilleure réputation de délivrabilité |
+| Points faibles | Plafond de 300 par jour en gratuit, plus cher en gros volume | Transfert de données hors UE | Cher en petit volume, données aux États-Unis |
+
+**Recommandation : Brevo.**
+- Les adresses e-mail des utilisateurs restent dans l'UE, sans transfert à justifier dans la politique de confidentialité.
+- L'offre gratuite couvre EZFOOT jusqu'à environ 60 000 utilisateurs (≈ 0,1 e-mail par utilisateur et par mois).
+- En gros volume, Resend coûte environ 2 fois moins cher. On réexaminera ce choix vers 50 000 utilisateurs, et l'interface `Mailer` rend le changement simple.
+- *À vérifier à l'ouverture du compte* : si l'offre gratuite ajoute la mention Brevo dans les e-mails transactionnels, l'offre Starter (≈ 9 €/mois) la retire.
+
+#### Risques
+
+| Risque | Parade |
+|---|---|
+| Firebase envoie encore son propre e-mail « adresse modifiée » depuis `noreply@foot5…` | À vérifier en staging. L'Admin SDK ne sait pas générer le lien « annuler le changement » : notre avis à l'ancienne adresse invite à contacter `contact@ezfoot.app` et à réinitialiser le mot de passe |
+| Pic d'inscriptions supérieur à 300 par jour (offre gratuite) | Plafond à 250 par jour avec alerte ; passer à Starter (≈ 9 €) en 2 minutes |
+| E-mails classés en spam au début | SPF, DKIM et DMARC alignés ; test sur mail-tester.com ≥ 9/10 avant la mise en production ; DMARC durci progressivement |
+| Fuite de la clé API Brevo | Clé dans Secret Manager, droits limités à l'envoi transactionnel, rotation possible à tout moment |
+
 ---
 
 ## 4. RGPD et cadre légal
@@ -275,16 +360,20 @@ Les calculs eux-mêmes (stats, cotes, équilibrage, notes, badges) sont des **fo
 | Cloudflare Pages, DNS, Turnstile | 0 € | 0 € | 0 € |
 | Sentry (Developer, puis Team) | 0 € | 0 € | ≈ 26 € |
 | Domaine ezfoot.app (≈ 14 $/an) | ≈ 1 € | ≈ 1 € | ≈ 1 € |
-| **Total** | **≈ 4 €** | **≈ 32 €** | **≈ 185 €** |
+| E-mails d'authentification (Brevo, ≈ 0,1 e-mail par utilisateur et par mois, §3.6) | 0 € (offre gratuite) | ≈ 27 € (Starter 20 000) | ≈ 60 € |
+| Cloudflare Email Routing (`contact@ezfoot.app`) | 0 € | 0 € | 0 € |
+| **Total** | **≈ 4 €** | **≈ 59 €** | **≈ 245 €** |
+
+*Levier* : passer les e-mails à Resend vers 50 000 utilisateurs ramènerait ce poste à ≈ 18 €/mois (soit ≈ 50 € et ≈ 203 € au total), au prix d'un transfert de données vers les États-Unis.
 
 **Garde-fous**
 - Alertes de budget Google Cloud à 5, 25, 50 et 100 €.
 - Compteur de lectures par écran, mesuré en staging.
 - Plafond d'instances sur les fonctions.
 
-**Monétisation (à préparer avant 100 €/mois, soit vers 270 k utilisateurs)**
+**Monétisation (à préparer avant 100 €/mois, soit vers 190 k utilisateurs)**
 - Premium par groupe à 2,99 €/mois TTC, soit environ 2,20 € net après TVA et frais Stripe.
-- À 500 k utilisateurs (environ 50 000 groupes), il faut environ **90 groupes payants (0,2 %)** pour couvrir 200 €/mois.
+- À 500 k utilisateurs (environ 50 000 groupes), il faut environ **115 groupes payants (0,25 %)** pour couvrir 250 €/mois.
 
 ---
 
@@ -294,6 +383,8 @@ Les calculs eux-mêmes (stats, cotes, équilibrage, notes, badges) sont des **fo
 |---|---|---|---|
 | Étape 2 | Passer le projet Firebase en **Blaze** | Cloud Functions, sauvegardes planifiées | 0 € dans les quotas, avec des alertes |
 | Étape 2 | **Cloudflare Pages** et **R2** (compte existant ; R2 demande une carte) | Héberger ezfoot.app et les images | 0 € |
+| **Dès maintenant** | **Cloudflare Email Routing** : `contact@ezfoot.app` → `foudil.so98@gmail.com` | Recevoir les réponses et le support | 0 € |
+| Étape 3 (V1), après Blaze | **Brevo** (compte particulier) avec le domaine `ezfoot.app` authentifié | E-mails d'authentification (§3.6) | 0 € jusqu'à 300 e-mails par jour |
 | Étape 4 | Projets Firebase `ezfoot-dev` et `ezfoot-staging` | Environnements séparés | 0 € |
 | Étape 4 | **Sentry** (offre Developer) | Erreurs et performance | 0 € |
 | V2 | Google Search Console | SEO de la page publique | 0 € |
@@ -314,7 +405,7 @@ Supabase et Vercel ne sont **pas nécessaires**.
 1. ✅ Correctif des règles (PR #1)
 2. **Cette étape** : audit et architecture, puis validation
 3. Plan de migration (`docs/migration.md`) et bascule vers ezfoot.app
-4. V1 à parité, renommée EZFOOT : SvelteKit, composants du thème « vert nuit », nouveau logo, fonctions serveur
+4. V1 à parité, renommée EZFOOT : SvelteKit, composants du thème « vert nuit », nouveau logo, fonctions serveur, **e-mails d'authentification envoyés par EZFOOT et page d'action sur ezfoot.app** (§3.6, annexe B)
 5. Industrialisation :
    - TypeScript strict
    - Vitest pour la logique métier, Playwright pour les parcours clés
@@ -337,6 +428,7 @@ Supabase et Vercel ne sont **pas nécessaires**.
 5. ✅ « Paris » renommé « Pronostics » dans l'interface
 6. ✅ Invitations par jeton révocable, le mot de passe du groupe devenant facultatif
 7. ✅ Passage à l'offre Blaze, avec une alerte de budget et un plafond : voir `docs/migration.md`, phase 0
+8. ⏳ **À valider** : e-mails d'authentification envoyés par EZFOOT via **Brevo**, page d'action sur ezfoot.app, `contact@ezfoot.app` via Cloudflare Email Routing (§3.6, annexe B)
 
 ---
 
@@ -375,3 +467,71 @@ Hypothèses : les mêmes que pour Firebase, pour pouvoir comparer.
 L'écart reste d'un facteur 8 à 10, parce que Firebase Auth est gratuit (e-mail et anonyme).
 
 **L'option « Firebase Auth + Supabase »** (authentification tierce) est possible. Mais d'après la grille actuelle, ses MAU tiers semblent facturés aussi : ça reste à vérifier avant de la retenir.
+
+---
+
+## Annexe B : e-mails d'EZFOOT, mise en place
+
+### B.1 Ordre des étapes
+
+| # | Quand | Qui | Étape | Vérification |
+|---|---|---|---|---|
+| 1 | **Dès maintenant**, sans code | toi | Cloudflare Email Routing : `contact@ezfoot.app` → Gmail (B.3) | Un e-mail envoyé à `contact@ezfoot.app` arrive dans Gmail |
+| 2 | Après Blaze (phase 0 de la migration) | toi | Compte Brevo, authentification du domaine, DNS (B.2, B.4) | Brevo affiche « Domaine authentifié » |
+| 3 | Après l'étape 2 | toi | Clé API Brevo enregistrée dans Secret Manager (B.4, point 6) | Je confirme que la fonction lit la clé en staging |
+| 4 | Après ta validation | moi | Modèles FR/EN, 3 fonctions, page `/auth/action`, limitation de débit, tests | Tests unitaires et de bout en bout verts dans l'émulateur |
+| 5 | En staging | toi et moi | Envoi réel vers Gmail, Outlook, iCloud et mail-tester.com | Score ≥ 9/10 ; SPF, DKIM et DMARC « PASS » dans « Afficher l'original » de Gmail |
+| 6 | En production | moi | L'app appelle nos fonctions ; plus aucun appel à `sendPasswordResetEmail` | Réinitialisation de bout en bout sur ton compte |
+| 7 | 4 semaines après | toi | DMARC passe de `p=none` à `p=quarantine` (B.2) | Rapports DMARC sans échec |
+
+Les étapes 4 à 6 peuvent être livrées **avant la V1**, dans l'app actuelle : elles n'ont besoin que de Blaze et d'une petite modification de `index.html`. À toi de décider.
+
+### B.2 Enregistrements DNS de ezfoot.app (Cloudflare → DNS → Enregistrements)
+
+| Type | Nom | Contenu | Proxy | Qui le crée |
+|---|---|---|---|---|
+| MX | `@` | `route1.mx.cloudflare.net` (priorité attribuée par Cloudflare) | — | **automatique** (Email Routing) |
+| MX | `@` | `route2.mx.cloudflare.net` | — | automatique |
+| MX | `@` | `route3.mx.cloudflare.net` | — | automatique |
+| TXT | `cf2024-1._domainkey` | clé DKIM de Cloudflare | — | automatique |
+| TXT | `@` | `v=spf1 include:_spf.mx.cloudflare.net include:spf.brevo.com ~all` | — | **toi** : modifie l'enregistrement SPF créé par Email Routing ; il ne doit en exister **qu'un seul** |
+| TXT | `@` | `brevo-code:XXXXXXXX` (code affiché par Brevo) | — | toi |
+| CNAME | `brevo1._domainkey` | `b1.ezfoot-app.dkim.brevo.com` (**valeur exacte affichée par Brevo**) | **DNS uniquement (nuage gris)** | toi |
+| CNAME | `brevo2._domainkey` | `b2.ezfoot-app.dkim.brevo.com` (idem) | **DNS uniquement (nuage gris)** | toi |
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com; adkim=r; aspf=r` | — | toi ; à l'étape 7, remplacer `p=none` par `p=quarantine` |
+
+Remarques :
+- **Le code Brevo et les cibles DKIM sont propres à ton compte.** Les valeurs ci-dessus montrent le format habituel. Copie celles qu'affiche Brevo, ou envoie-moi une capture et je te confirme la liste finale.
+- **DKIM en un seul enregistrement** : selon la date de création du compte, Brevo peut demander un unique enregistrement TXT DKIM (`mail._domainkey`) au lieu des deux CNAME. Dans ce cas, prends celui-là.
+- **CNAME DKIM proxifiés** : avec le nuage orange, l'authentification échoue. Ils doivent rester en gris.
+- **SPF** : Brevo indique que SPF n'est plus nécessaire pour l'alignement. Ajouter `include:spf.brevo.com` ne coûte rien et couvre les deux cas. On reste à 2 consultations DNS sur les 10 autorisées.
+- **DMARC** : une seule ligne `_dmarc`. Si Cloudflare propose « DMARC Management » (gratuit), il peut remplacer l'adresse `rua` par la sienne pour afficher les rapports dans le tableau de bord. C'est au choix.
+
+### B.3 Cloudflare Email Routing (étape 1, ≈ 10 min)
+1. Cloudflare → `ezfoot.app` → **Email** → **Email Routing** → **Commencer**.
+2. **Adresse personnalisée** : `contact` → **Action** : *Envoyer vers un e-mail* → `foudil.so98@gmail.com`.
+3. Cloudflare envoie un e-mail de confirmation à Gmail : clique sur le lien de validation.
+4. Accepte l'ajout automatique des enregistrements MX, SPF et DKIM (**Ajouter les enregistrements et activer**).
+5. Ajoute une deuxième adresse, `noreply` → *Supprimer* (*Drop*), pour que les réponses envoyées par erreur à `noreply@` soient ignorées proprement. Les vraies réponses vont vers `contact@` grâce au « Répondre à ».
+6. *(Facultatif)* Pour répondre **depuis** `contact@ezfoot.app` dans Gmail : *Paramètres → Comptes → Envoyer des e-mails en tant que*, avec le SMTP de Brevo. On le fera après l'étape 2.
+
+### B.4 Brevo (étape 2, ≈ 20 min)
+1. Crée un compte sur brevo.com : **particulier**, offre **gratuite**, adresse `contact@ezfoot.app` (elle arrive déjà dans Gmail grâce à l'étape 1).
+2. **Expéditeurs, domaines et IP dédiées** → **Domaines** → **Ajouter un domaine** → `ezfoot.app` → choisis **l'authentification manuelle** (garde le contrôle de ton DNS) → recopie les enregistrements dans Cloudflare (B.2) → **Vérifier**.
+3. **Expéditeurs** → **Ajouter** : nom `EZFOOT`, adresse `noreply@ezfoot.app`.
+4. **Transactionnel** → **Paramètres** : **désactive le suivi des ouvertures et des clics**.
+5. **Paramètres** → **Clés API et SMTP** → **Générer une clé API** nommée `ezfoot-functions`. Ne la colle **nulle part** : ni dans le code, ni dans un e-mail, ni dans notre conversation.
+6. Dans un terminal :
+   ```
+   firebase functions:secrets:set BREVO_API_KEY --project foot5-68b18
+   ```
+   Colle la clé quand la commande la demande. Elle est stockée dans Secret Manager (6 versions de secret gratuites, puis ≈ 0,06 $ par version et par mois).
+
+### B.5 Coût mensuel
+
+| Poste | Aujourd'hui → 10 k utilisateurs | 100 k | 500 k |
+|---|---|---|---|
+| Brevo | 0 € (jusqu'à 300 e-mails par jour) | ≈ 27 € | ≈ 60 € |
+| Cloudflare Email Routing, DNS, DMARC Management | 0 € | 0 € | 0 € |
+| Cloud Functions et Secret Manager (quelques milliers d'appels) | 0 € | < 1 € | ≈ 2 € |
+| **Total e-mails** | **0 €** | **≈ 28 €** | **≈ 62 €** |

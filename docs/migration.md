@@ -180,7 +180,7 @@ Pour obtenir les valeurs de référence, on exécute le code **actuel** de `inde
   - `ezfoot.com` et `scorefootballdata.com` redirigent en 301 via une Redirect Rule gratuite.
 - **Firebase** :
   - ajouter `ezfoot.app` et `beta.ezfoot.app` aux domaines autorisés d'Auth et aux référents de la clé API ;
-  - pointer les modèles d'e-mail (mot de passe oublié) vers `ezfoot.app`.
+  - vérifier que les e-mails d'authentification d'EZFOOT (architecture §3.6) sont actifs depuis au moins une semaine : expéditeur `noreply@ezfoot.app`, liens vers `ezfoot.app/auth/action`. Les modèles Firebase, impossibles à modifier sur ce projet, ne sont plus utilisés.
 - **J-3** : message WhatsApp au groupe, avec la date, ce qui change et le fait que tout le monde garde son compte et ses Ballons d'or.
 
 **J0, dans l'ordre** (≈ 2 h, un jour sans match)
