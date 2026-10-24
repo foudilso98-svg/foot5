@@ -97,7 +97,15 @@ Elles s'ajoutent aux sauvegardes automatiques.
 - **Seconde base Firestore `ezfoot`**, dans le même projet et la même région (eur3).
 - Les deux bases sont totalement séparées : chacune a ses propres règles, et le SDK choisit la base par son nom.
 - La base `(default)` n'est **jamais modifiée** par la migration. Seule exception : ses règles passent en lecture seule pendant la phase 5.
-- Coût : la base nommée ne profite pas du quota gratuit. Au volume actuel, c'est moins de 0,10 €/mois.
+- **Coût (vérifié le 24/10/2026 dans la doc Firebase)** : un projet n'a droit qu'à **une seule base gratuite**, la première créée, ici `(default)`. La base `ezfoot` est donc facturée dès la première opération (tarifs eur3 ≈ 0,06 $ les 100 000 lectures, 0,18 $ les 100 000 écritures, 0,18 $/Gio stocké, à confirmer dans la console).
+  - **Bêta (2 semaines)** : environ 25 000 lectures et 10 000 écritures (synchronisation, passage du script chaque nuit, bêta-testeurs), soit **≈ 0,03 €**.
+  - **Après la bascule, au volume actuel** (1 groupe) : environ 15 000 lectures et 1 000 écritures par mois, soit **≈ 0,01 €/mois**.
+  - **Manque à gagner maximal** une fois le quota gratuit dépassé : 1,5 M lectures + 600 000 écritures + 600 000 suppressions + 1 Gio, soit **≈ 3 €/mois au plus**, quelle que soit la taille d'EZFOOT.
+  - **Alternatives écartées** :
+    - Écrire la v2 dans `(default)` sous d'autres noms de collections : on mélange v1 et v2 dans la même base, avec les mêmes règles.
+    - Créer un projet séparé : il faudrait migrer les comptes Firebase Auth, donc les mots de passe.
+    - Supprimer `(default)` puis restaurer `ezfoot` sous ce nom : une interruption de service et une suppression de données de production.
+    - Aucune ne vaut le risque pour 3 €/mois au maximum. À rediscuter seulement si un jour on archive `(default)`, avec ton accord écrit.
 
 ### 4.2 Correspondance v1 → v2
 
@@ -248,7 +256,8 @@ Le script `v2-to-v1` est **testé en staging avant J0**, au même titre que le s
 |---|---|
 | Exports Firestore (3 × ≈ 1 Mo) et bucket | < 0,10 € |
 | Lectures et écritures du script (quelques milliers de documents par passage) | < 0,10 € |
-| Base `ezfoot` pendant la bêta | < 0,10 €/mois |
+| Base `ezfoot` pendant la bêta (sans quota gratuit, voir 4.1) | ≈ 0,03 € |
+| Base `ezfoot` après la bascule | ≈ 0,01 €/mois aujourd'hui ; au plus ≈ 3 €/mois de plus qu'avec le quota gratuit |
 | Sauvegardes planifiées et PITR | < 0,10 €/mois |
 | Cloudflare Pages, R2 (< 1 Go), redirections | 0 € |
 | **Total** | **≈ 0 à 2 €** |
