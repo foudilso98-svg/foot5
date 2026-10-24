@@ -1,5 +1,2 @@
 node_modules/
 *-debug.log
-functions/lib/
-.secret.local
-*.local

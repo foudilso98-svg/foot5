@@ -7,7 +7,6 @@ self.addEventListener('fetch',e=>{
   if(r.method!=='GET')return;
   const ok=u.origin===location.origin||u.hostname==='www.gstatic.com';
   if(!ok)return;
-  if(u.pathname.includes('/auth/'))return; // liens à code unique : jamais en cache
   e.respondWith(fetch(r).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put(r,cp))}return res})
     .catch(()=>caches.match(r).then(m=>m||caches.match('./'))));
 });

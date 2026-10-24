@@ -526,8 +526,6 @@ Remarques :
    firebase functions:secrets:set BREVO_API_KEY --project foot5-68b18
    ```
    Colle la clé quand la commande la demande. Elle est stockée dans Secret Manager (6 versions de secret gratuites, puis ≈ 0,06 $ par version et par mois).
-7. Brevo → **Sécurité** → **IP autorisées** : **désactive le blocage des IP inconnues**. Les Cloud Functions n'ont pas d'adresse IP fixe. Sans ça, Brevo refuse les envois (erreur 401). La clé reste protégée par Secret Manager.
-8. Console Firebase → **Firestore** → **TTL** → **Créer une règle** : groupe de collections `rateLimits`, champ `expireAt`. Les compteurs de limitation s'effacent alors tout seuls (gratuit).
 
 ### B.5 Coût mensuel
 
